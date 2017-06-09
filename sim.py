@@ -25,11 +25,10 @@ if __name__ == "__main__":
 
   def lutN(N,sigma):
     def norm(u):
-      s2 = sigma**2
-      front = math.exp(.792*N)*(((2*math.pi)**N)*s2)**(-0.5)
+      front = (1+1/math.e**(2.0/sigma))**(-N)
       def f(x):
         l2 = sum([(x[i]-u[i])**2 for i in range(N)])
-        return front * math.exp(-l2/(2.0*s2))
+        return front * math.exp(-l2/(2.0*sigma))
       return f
 
 
@@ -45,5 +44,5 @@ if __name__ == "__main__":
 
   #l = lut([np.random.uniform(-1,1) for i in range(8)])
   for n in range(1,8):
-    l = lutN(n,1)([1 for i in range(2**n)])
+    l = lutN(n,3.5)([1 for i in range(2**n)])
     print n, l([-1 for i in range(n)])
