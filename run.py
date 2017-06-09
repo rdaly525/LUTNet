@@ -33,7 +33,7 @@ if __name__ == '__main__':
   rw = 0.01
   x = tf.placeholder(tf.float32, shape=[None,N])
   y_ = tf.placeholder(tf.float32, shape=[None])
-  y, W = lutN(N,sigma)(x)
+  y, W = lutN(sigma)(x)
   loss = tf.nn.l2_loss(y-y_) + rw*binary_reg(W)
   train_step = tf.train.GradientDescentOptimizer(lr).minimize(loss)
   

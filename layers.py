@@ -52,11 +52,47 @@ def binary_reg(W):
   return tf.add_n(ws)
 
 
+def lutlayer(N,sigma,inW,outW):
+  lutfun = lutN(N,sigma)
+  def randConnection():
+    assert 4*outW > inW
+    idx = np.zeros(4*outW).astype(int)
+    minNum = int(4*outW/inW)
+    for i in range(inW):
+      for j in range(minNum):
+        idx[i*minNum+j] = i
+    for i in range(inW*minNum,4*outW,i):
+      idx[i] = np.random.randint(0,inW)
+    return np.random.permutation(idx)
+
+  def layer(X):
+    assert X.shape[1] == inW
+    #pick 4*outW random indices of from inW
+    Ws = []
+    layer_outputs= []
+    cons = randConnection()
+    ri_stats = [0 for i in range(inW)]
+    for i in range(outW):
+      lut_inputs = []
+      for j in range(4):
+        ri = cons[i*4+j]
+        ri_stats[ri] += 1
+        lut_inputs.append(X[:,ri])
+      lut_ins = tf.stack(lut_inputs,axis=1)
+      lut_out, W = lutfun(lut_ins)
+      layer_outputs.append(lut_out)
+      Ws.append(W)
+    outs = tf.stack(layer_outputs,axis=1)
+    print ri_stats
+    return outs,Ws
+  return layer
+    
+
 #N bits
 #H,W initial height and width
 #Cin is input channels
 #Cout is output channels
-def lutlayerdepth(N,H,W,Cin,Cout):
+def lutConvlayer(N,H,W,Cin,Cout):
   assert Cin==4
   lut = lutN(N,1)
   def layer(X):
@@ -79,25 +115,3 @@ def lutlayerdepth(N,H,W,Cin,Cout):
       luth.append(tf.stack(lutw,axis=1))
     return tf.stack(luth,axis=1), Ws
   return layer
-
-def lutlayerspatial():
-  assert(0)
-
-def lutlayerpool():
-  assert(0)
-
-def lutlayer(N,H,W,Cin,Cout,ltype):
-  assert N==4
-  assert Cin==4 or Cin==1
-  if ltype=="depth":
-    return lutlayerdepth(N,H,W,Cin,Cout)
-  elif ltype=="spatial":
-    return lutlayerspatial(N,H,W,Cin,Cout)
-  elif ltype=="pool":
-    return lutlayerpool(N,H,W,Cin,Cout)
-  assert(0)
-
-
-
-
-
