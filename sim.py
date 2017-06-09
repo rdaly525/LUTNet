@@ -1,19 +1,7 @@
-import random
 import math
-import cmath as cm
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import numpy as np
-import heapq
-import sklearn.decomposition as sc
-from sklearn.utils.extmath import randomized_svd
-from math import sqrt
-from scipy.linalg import eig
-from PIL import Image
-import scipy.misc
 
 if __name__ == "__main__":
-
 
   #Use regularization: reg(x) = 1-2x**2 + x**4
   def bitfield(i,N):

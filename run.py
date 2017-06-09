@@ -8,7 +8,6 @@ from layers import *
 
 if __name__ == '__main__':
 
-
   def xor(x,N):
     ret = 0
     for i in range(N):
@@ -24,10 +23,12 @@ if __name__ == '__main__':
   def mod5(x,N):
     return int(x%5==0)
 
+  def fun(x,N):
+    return int(math.sin(x*308.234324)*math.cos(x**2.3) + 1)
 
-  sigma = 0.1
+  sigma = .01
   N = 5
-  data = datasets.lutdata(N,mod5)
+  data = datasets.lutdata(N,fun)
   lr = 0.1
   rw = 0.01
   x = tf.placeholder(tf.float32, shape=[None,N])
@@ -44,7 +45,7 @@ if __name__ == '__main__':
     tf.global_variables_initializer().run()
     writer = tf.summary.FileWriter('logs',sess.graph)
     wval = None
-    for i in range(1000):
+    for i in range(200):
       tdata = data.next_data(4)
       _,wval,yval,lossval = sess.run([train_step,W,y,loss],feed_dict={x:tdata[0],y_:tdata[1]})
       print lossval, yval,tdata[1]
