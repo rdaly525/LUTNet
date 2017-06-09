@@ -37,3 +37,17 @@ class adddata:
       X[i,bits:] = bitfield(b,bits)
       y[i] = bitfield(plus,bits+1)
     return [X,y]
+
+  @property
+  def test_data(self):
+    bits = self.bits
+    X,y = np.zeros((2**(2*bits),2*bits)),np.zeros((2**(2*bits),bits+1))
+    for a in range(2**bits):
+      for b in range(2**bits):
+        plus = a+b
+        i = a*(2**bits)
+        X[i,0:bits] = bitfield(a,bits)
+        X[i,bits:] = bitfield(b,bits)
+        y[i] = bitfield(plus,bits+1)
+    return [X,y]
+
