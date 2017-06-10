@@ -34,7 +34,7 @@ def lutN(N,sigma):
       return front*tf.exp(l2*(-0.5/sigma))
     
     assert x.shape[1]==N
-    w = tf.Variable(tf.random_normal([2**N]))
+    w = tf.Variable(tf.random_normal([2**N],mean=0,stddev=0.5))
     norms = [mv_norm(x,i) for i in range(2**N)]
     norms_stack = tf.stack(norms,axis=1)
     outpre = tf.reduce_sum(norms_stack*w,axis=1)
@@ -51,31 +51,55 @@ def binary_reg(W):
     ws.append(tf.reduce_sum(wm1*wm1*wp1*wp1))
   return tf.add_n(ws)
 
+def randConnection(inW,outW):
+  minNum = int(4*outW/inW)
+  assert minNum > 0
+  choices = [[i,minNum] for i in range(inW)]
+  rerror = 4*outW-inW*minNum
+  errorperm = np.random.permutation(np.array(range(inW)))
+  for i in range(rerror):
+    choices[errorperm[i]][1] +=1
+  cons = np.zeros((outW,4)).astype(int)
+  for i in range(outW):
+    if len(choices) < 4 :
+      #Have to distribute the rest 
+      #could have more than 1 i slot
+      j=0
+      di=0
+      for choice in choices:
+        for _ in range(choice[1]):
+          di = j/4
+          cons[i+di][j%4] = choice[0]
+          j +=1
+      assert j%4==0
+    else:
+      indices = np.random.choice(len(choices),4,replace=False)
+      indices.sort() 
+      indices = np.flip(indices,0) #Needed to delete properly
+      for j in range(4):
+        idx = indices[j]
+        cons[i][j] = choices[idx][0]
+        if choices[idx][1]==1:
+          del choices[idx]
+        else:
+          choices[idx][1] -= 1
+  return np.random.permutation(cons)
 
 def lutlayer(N,sigma,inW,outW):
+  assert outW >=4
   lutfun = lutN(N,sigma)
-  def randConnection():
-    assert 4*outW > inW
-    idx = np.zeros(4*outW).astype(int)
-    minNum = int(4*outW/inW)
-    for i in range(inW):
-      for j in range(minNum):
-        idx[i*minNum+j] = i
-    for i in range(inW*minNum,4*outW,i):
-      idx[i] = np.random.randint(0,inW)
-    return np.random.permutation(idx)
 
   def layer(X):
     assert X.shape[1] == inW
     #pick 4*outW random indices of from inW
     Ws = []
     layer_outputs= []
-    cons = randConnection()
+    cons = randConnection(inW,outW)
     ri_stats = [0 for i in range(inW)]
     for i in range(outW):
       lut_inputs = []
       for j in range(4):
-        ri = cons[i*4+j]
+        ri = cons[i][j]
         ri_stats[ri] += 1
         lut_inputs.append(X[:,ri])
       lut_ins = tf.stack(lut_inputs,axis=1)
