@@ -22,32 +22,37 @@ class lutdata:
     return self.lutref
 
 
-class adddata:
-  def __init__(self,N,bits):
+class binopdata:
+  def __init__(self,N,f,inbits,outbits):
     self.N = N
-    self.bits = bits
+    self.f = f
+    self.inbits = inbits
+    self.outbits = outbits
 
   def next_data(self,k):
-    bits = self.bits
-    X,y = np.zeros((k,2*bits)),np.zeros((k,bits+1))
+    inbits = self.inbits
+    outbits = self.outbits
+    X,y = np.zeros((k,2*inbits)),np.zeros((k,outbits))
     for i in range(k):
-      a,b = np.random.randint(0,2**bits,2)
-      plus = a+b
-      X[i,0:bits] = bitfield(a,bits)
-      X[i,bits:] = bitfield(b,bits)
-      y[i] = bitfield(plus,bits+1)
+      a,b = np.random.randint(0,2**inbits,2)
+      c = self.f(a,b)
+      X[i,0:inbits] = bitfield(a,inbits)
+      X[i,inbits:] = bitfield(b,inbits)
+      y[i] = bitfield(c,outbits)
     return [X,y]
 
   @property
   def test_data(self):
-    bits = self.bits
-    X,y = np.zeros((2**(2*bits),2*bits)),np.zeros((2**(2*bits),bits+1))
-    for a in range(2**bits):
-      for b in range(2**bits):
-        plus = a+b
-        i = a*(2**bits)
-        X[i,0:bits] = bitfield(a,bits)
-        X[i,bits:] = bitfield(b,bits)
-        y[i] = bitfield(plus,bits+1)
+    inbits = self.inbits
+    outbits = self.outbits
+    inbitrange = 2**inbits
+    X,y = np.zeros((inbitrange**2,2*inbits)),np.zeros((inbitrange**2,outbits))
+    for a in range(inbitrange):
+      for b in range(inbitrange):
+        c = self.f(a,b)
+        i = a*(2**inbits)+b
+        X[i,0:inbits] = bitfield(a,inbits)
+        X[i,inbits:] = bitfield(b,inbits)
+        y[i] = bitfield(c,outbits)
     return [X,y]
 

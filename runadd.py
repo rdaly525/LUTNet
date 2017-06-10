@@ -12,24 +12,27 @@ if __name__ == '__main__':
 
   sigma = 1
   N = 4
-  bits = 4
-  data = datasets.adddata(N,bits)
-  test_data = data.test_data
   lr = 0.1
   rw = 0.01
-  layers = 7
+  layers = 5
   
+  bits = 4
   Xbits = 2*bits
   ybits = bits+1
-
+  
+  def add(a,b):
+    return a+b
+  data = datasets.binopdata(N,add,Xbits/2,ybits)
+  test_data = data.test_data
+  data.next_data(6)
   X = tf.placeholder(tf.float32, shape=[None,Xbits])
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
   
   Ws = []
   curl = X
-  curbits = 2*bits
+  curbits = Xbits
   for li in range(layers-1):
-    nextbits = int(Xbits - (li*1.0/(Xbits+1-ybits)))
+    nextbits = int(Xbits - (li*(Xbits+1-ybits))/(layers))
     print "C,N =", curbits, nextbits
     curl, Wsl = lutlayer(N,sigma,curbits,nextbits)(curl)
     Ws += Wsl
@@ -55,26 +58,24 @@ if __name__ == '__main__':
     dw = (W > 0).astype(int)
     return dw
 
-  sample = 50
+  sample = 20
   iters = 5000
   losses = np.zeros(iters/sample)
   with tf.Session() as sess:
     tf.global_variables_initializer().run()
     wval = None
     for i in range(iters):
-      tdata = data.next_data(16)
+      tdata = data.next_data(32)
       _,yval,lossval = sess.run([train_step,y,loss],feed_dict={X:tdata[0],y_:tdata[1]})
       if (i%sample==0):
         print lossval
         print "  ",scaleto01(tdata[0][0][0:bits]),"+",scaleto01(tdata[0][0][bits:]),"=",scaleto01(tdata[1][0])
         print "  lrn",scaleto01(yval[0],False)
         losses[i/sample] = lossval
-        #print "  ",scaleto01(tdata[0][0][0:bits])[::-1],"+",scaleto01(tdata[0][0][bits:])[::-1],"=",scaleto01(tdata[1][0])[::-1]
-        #print "  lrn,cor",scaleto01(yval[0],False)[::-1]
 
     print "Accuracy!"
     print accuracy.eval(feed_dict={X:test_data[0],y_:test_data[1]})
-  
+    print sess.run(Ws[0])
   plt.figure(1)
   plt.plot(losses)
   plt.xlabel("iter/10")
