@@ -62,8 +62,10 @@ def randConnection(inW,outW):
   cons = np.zeros((outW,4)).astype(int)
   for i in range(outW):
     if len(choices) < 4 :
+      print choices
       #Have to distribute the rest 
       #could have more than 1 i slot
+      #TODO Should distribute evenly for the more than one slot case
       j=0
       di=0
       for choice in choices:
@@ -72,6 +74,7 @@ def randConnection(inW,outW):
           cons[i+di][j%4] = choice[0]
           j +=1
       assert j%4==0
+      break
     else:
       indices = np.random.choice(len(choices),4,replace=False)
       indices.sort() 

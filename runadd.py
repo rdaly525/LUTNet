@@ -14,15 +14,22 @@ if __name__ == '__main__':
   N = 4
   lr = 0.1
   rw = 0.01
-  layers = 5
+  layers = 7
   
-  bits = 4
+  bits = 8
   Xbits = 2*bits
-  ybits = bits+1
+  ybits = 5
   
   def add(a,b):
-    return a+b
-  data = datasets.binopdata(N,add,Xbits/2,ybits)
+    return (a+b)%(2**bits)
+  
+  def popcnt(a,b):
+    cnt = 0
+    for i in range(bits):
+      cnt += ((a>>i)&1) + ((b>>i)&1)
+    return cnt
+
+  data = datasets.binopdata(N,popcnt,Xbits/2,ybits)
   test_data = data.test_data
   data.next_data(6)
   X = tf.placeholder(tf.float32, shape=[None,Xbits])
@@ -32,19 +39,13 @@ if __name__ == '__main__':
   curl = X
   curbits = Xbits
   for li in range(layers-1):
-    nextbits = int(Xbits - (li*(Xbits+1-ybits))/(layers))
-    print "C,N =", curbits, nextbits
+    nextbits = int(Xbits - (li*1.0*(Xbits+1-ybits))/(layers))
     curl, Wsl = lutlayer(N,sigma,curbits,nextbits)(curl)
     Ws += Wsl
     curbits = nextbits
-  print "C,N =",curbits,ybits
   y, Wfinal = lutlayer(N,sigma,curbits,ybits)(curl)
   Ws += Wfinal
-  #l1, Ws1 = lutlayer(N,sigma,2*bits,2*bits)(X)
-  #l2, Ws2 = lutlayer(N,sigma,2*bits,2*bits)(l1)
-  #l3, Ws3 = lutlayer(N,sigma,2*bits,2*bits-1)(l2)
-  #y, Ws4 = lutlayer(N,sigma,2*bits-1,bits+1)(l3)
-  #Ws = Ws1 + Ws2 + Ws3 + Ws4
+  
   print "Total Luts =", len(Ws)
   loss = tf.nn.l2_loss(y-y_) + rw*binary_reg(Ws)
   train_step = tf.train.GradientDescentOptimizer(lr).minimize(loss)
@@ -59,7 +60,7 @@ if __name__ == '__main__':
     return dw
 
   sample = 20
-  iters = 5000
+  iters = 3000
   losses = np.zeros(iters/sample)
   with tf.Session() as sess:
     tf.global_variables_initializer().run()
@@ -68,7 +69,7 @@ if __name__ == '__main__':
       tdata = data.next_data(32)
       _,yval,lossval = sess.run([train_step,y,loss],feed_dict={X:tdata[0],y_:tdata[1]})
       if (i%sample==0):
-        print lossval
+        print lossval, "("+str(i)+"/"+str(iters)+")"
         print "  ",scaleto01(tdata[0][0][0:bits]),"+",scaleto01(tdata[0][0][bits:]),"=",scaleto01(tdata[1][0])
         print "  lrn",scaleto01(yval[0],False)
         losses[i/sample] = lossval
@@ -78,6 +79,6 @@ if __name__ == '__main__':
     print sess.run(Ws[0])
   plt.figure(1)
   plt.plot(losses)
-  plt.xlabel("iter/10")
+  plt.xlabel("iter/"+str(sample))
   plt.ylabel("loss")
   plt.show()
