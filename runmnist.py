@@ -8,18 +8,18 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
 
-  data = datasets.Mnistdata(ds=4)
+  data = datasets.Mnistdata(ds=2)
   print "FUCK"
   sigma = 1
   N = 4
   lr = 0.1
   rw = 0.01
-  layers = 7
-  Xbits = 7*7
+  layers = 10
+  Xbits = 14*14
   ybits = 10
 
-  X = tf.placeholder(tf.float32, shape=[None,7*7])
-  y_ = tf.placeholder(tf.float32, shape=[None,10])
+  X = tf.placeholder(tf.float32, shape=[None,Xbits])
+  y_ = tf.placeholder(tf.float32, shape=[None,ybits])
   
   y, Ws = lutlayers(N,sigma,Xbits,ybits,layers)(X)
   
