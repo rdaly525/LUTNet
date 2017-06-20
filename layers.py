@@ -110,10 +110,24 @@ def lutlayer(N,sigma,inW,outW):
       layer_outputs.append(lut_out)
       Ws.append(W)
     outs = tf.stack(layer_outputs,axis=1)
-    print ri_stats
+    print str(inW)+"->"+str(outW),ri_stats
     return outs,Ws
   return layer
     
+
+def lutlayers(N,sigma,inW,outW,L):
+  def layers(X):
+    assert X.shape[1] == inW
+    Ws = []
+    curl = X
+    curbits = inW
+    for li in range(L):
+      nextbits = int(outW + ((L-1-li)*1.0*(inW-outW))/(L))
+      curl, Wsl = lutlayer(N,sigma,curbits,nextbits)(curl)
+      Ws += Wsl
+      curbits = nextbits
+    return curl, Ws
+  return layers
 
 #N bits
 #H,W initial height and width

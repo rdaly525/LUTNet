@@ -4,45 +4,54 @@ import tensorflow as tf
 from common import *
 import datasets
 from layers import *
-from tensorflow.examples.tutorials.mnist import input_data
+import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
 
-  mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
-  
-  H = 5
-  W = 3
-  Cin = 4
-  Cout = 4
-  
+  data = datasets.Mnistdata(ds=4)
+  print "FUCK"
+  sigma = 1
   N = 4
   lr = 0.1
   rw = 0.01
-  x = tf.placeholder(tf.float32, shape=[None,H,W,Cin])
-  l1,Ws = lutlayer(N,H,W,Cin,Cout,"depth")(x)
-  print l1
-  print len(Ws)
-  assert(0)
+  layers = 7
+  Xbits = 7*7
+  ybits = 10
+
+  X = tf.placeholder(tf.float32, shape=[None,7*7])
   y_ = tf.placeholder(tf.float32, shape=[None,10])
-  y, W = lutN(N,1)(x)
-  loss = tf.nn.l2_loss(y-y_) + rw*binary_reg(W)
+  
+  y, Ws = lutlayers(N,sigma,Xbits,ybits,layers)(X)
+  
+  print "Total luts", len(Ws)
+  loss = tf.nn.l2_loss(y-y_) + rw*binary_reg(Ws)
   train_step = tf.train.GradientDescentOptimizer(lr).minimize(loss)
   
-  def descW(W):
-    dw = (W > 0).astype(int)
-    return dw
+  yscale = y > 0
+  y_scale = y_ > 0
+  correct_pred = tf.reduce_all(tf.equal(yscale,y_scale),1)
+  accuracy = tf.reduce_mean(tf.cast(correct_pred,tf.float32))
 
+  sample = 20
+  iters = 5000
+  losses = np.zeros(iters/sample)
   with tf.Session() as sess:
     tf.global_variables_initializer().run()
-    writer = tf.summary.FileWriter('logs',sess.graph)
     wval = None
-    for i in range(1000):
-      tdata = data.next_data(4)
-      _,wval,yval,lossval = sess.run([train_step,W,y,loss],feed_dict={x:tdata[0],y_:tdata[1]})
-      print lossval, yval,tdata[1]
-      #print "  ",wval,tdata[0]
-    print wval
-    print "lrnd", descW(wval)
-    print "corr", data.correct
-    writer.close()
-
+    for i in range(iters):
+      tdata = data.next_data(32)
+      _,yval,lossval,co_ped,ac= sess.run([train_step,y,loss,correct_pred,accuracy],feed_dict={X:tdata[0],y_:tdata[1]})
+      if (i%sample==0):
+        print lossval, "("+str(i)+"/"+str(iters)+")"
+        print "  cor",scaleto01(tdata[1][0])
+        print "  lrn",scaleto01(yval[0],False)
+        losses[i/sample] = lossval
+        print "co,ac",co_ped,ac
+    print "Accuracy!"
+    print accuracy.eval(feed_dict={X:data.test[0],y_:data.test[1]})
+    print sess.run(Ws[0])
+  plt.figure(1)
+  plt.plot(losses)
+  plt.xlabel("iter/"+str(sample))
+  plt.ylabel("loss")
+  plt.show()

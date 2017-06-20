@@ -11,7 +11,7 @@ def bitfield(i,N):
   bits = [int(digit)*2-1 for digit in bits]
   return np.array(bits).astype(float)
 
-def sacleto11(val,check=True):
+def scaleto11(val,check=True):
   if type(val) is int:
     val = [val]
   if type(val) is list:
