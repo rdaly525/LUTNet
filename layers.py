@@ -32,7 +32,9 @@ def lutN(N,sigma):
       xnorm = x-u
       l2 = tf.reduce_sum(xnorm*xnorm,axis=1)
       return front*tf.exp(l2*(-0.5/sigma))
-    
+
+    if type(x) is list:
+      x = tf.stack(x,axis=1)
     assert x.shape[1]==N
     w = tf.Variable(tf.random_normal([2**N],mean=0,stddev=0.5))
     norms = [mv_norm(x,i) for i in range(2**N)]
@@ -88,8 +90,8 @@ def randConnection(inW,outW):
           choices[idx][1] -= 1
   return np.random.permutation(cons)
 
-def lutlayer(N,sigma,inW,outW):
-  assert outW >=4
+def lutlayerrand(N,sigma,inW,outW):
+  assert outW >=1
   lutfun = lutN(N,sigma)
 
   def layer(X):
@@ -114,16 +116,32 @@ def lutlayer(N,sigma,inW,outW):
     return outs,Ws
   return layer
     
+def lutlayersimp(N,sigma,inW,outW):
+  def adjust(X,w):
+    bnum = tf.shape(X)[0]
+    if (w%N !=0):
+      adj = w/N
+      X = tf.concat([X,tf.fill([bnum,adj],-1.0)])
+
+  def layers(X):
+    assert X.shape[1] == inW
+    X = adjust(X,inW)
+    layer_outputs= []
+    for o in range(outW):
+      while(True):
+        X.append
+
 
 def lutlayers(N,sigma,inW,outW,L):
   def layers(X):
     assert X.shape[1] == inW
+
     Ws = []
     curl = X
     curbits = inW
     for li in range(L):
       nextbits = int(outW + ((L-1-li)*1.0*(inW-outW))/(L))
-      curl, Wsl = lutlayer(N,sigma,curbits,nextbits)(curl)
+      curl, Wsl = lutlayerrand(N,sigma,curbits,nextbits)(curl)
       Ws += Wsl
       curbits = nextbits
     return curl, Ws

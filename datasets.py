@@ -37,6 +37,46 @@ class Lutdata(Dataset):
   def test(self):
     return self.test
 
+class Unaryopdata(Dataset):
+  def __init__(self,f,inbits,outbits):
+    self.cnt = 0
+    self.f = f
+    self.inbits = inbits
+    self.outbits = outbits
+    inbitrange = 2**inbits
+    X,y = np.zeros((inbitrange,inbits)),np.zeros((inbitrange,outbits))
+    for a in range(inbitrange):
+      c = self.f(a)
+      i = a
+      X[i] = bitfield(a,inbits)
+      y[i] = bitfield(c,outbits)
+    print X.shape, y.shape
+    Dataset.__init__(self,Data(X,y),Data(X,y))
+
+  def next_data(self,k,rand=True):
+    inbits = self.inbits
+    outbits = self.outbits
+    X,y = np.zeros((k,inbits)),np.zeros((k,outbits))
+    if rand:
+      for i in range(k):
+        a = np.random.randint(0,2**inbits)
+        c = self.f(a)
+        X[i] = bitfield(a,inbits)
+        y[i] = bitfield(c,outbits)
+    else:
+      tot = 2**inbits
+      for i in range(k):
+        a = (i+self.cnt)%tot
+        c = self.f(a)
+        X[i] = bitfield(a,inbits)
+        y[i] = bitfield(c,outbits)
+      self.cnt = (self.cnt+k)%tot
+    return [X,y]
+      
+  @property
+  def test(self):
+    return self.test_data
+
 class Binopdata(Dataset):
   def __init__(self,f,inbits,outbits):
     self.f = f
@@ -44,6 +84,7 @@ class Binopdata(Dataset):
     self.outbits = outbits
     inbitrange = 2**inbits
     X,y = np.zeros((inbitrange**2,2*inbits)),np.zeros((inbitrange**2,outbits))
+    print X.shape, y.shape
     for a in range(inbitrange):
       for b in range(inbitrange):
         c = self.f(a,b)
@@ -67,7 +108,7 @@ class Binopdata(Dataset):
 
   @property
   def test(self):
-    return self.test
+    return self.test_data
 
 class Mnistdata(Dataset):
   def __init__(self,ds=1):

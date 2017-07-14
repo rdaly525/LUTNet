@@ -12,7 +12,7 @@ if __name__ == '__main__':
   print "FUCK"
   sigma = 1
   N = 4
-  lr = 0.1
+  lr = 0.01
   rw = 0.01
   layers = 10
   Xbits = 14*14
