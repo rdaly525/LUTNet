@@ -9,11 +9,11 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
 
-
+  np.random.seed(2)
   sigma = 1
   N = 4
   lr = 0.1
-  rw = 0.1
+  rw = 0.01
   
   bits = 6
   Xbits = 2*bits
@@ -60,11 +60,12 @@ if __name__ == '__main__':
   yscale = y > 0
   y_scale = y_ > 0
   correct_pred = tf.equal(yscale,y_scale)
-  accuracy = tf.reduce_mean(tf.cast(correct_pred,tf.float32))
+  correct_red = tf.reduce_all(correct_pred,axis=1)
+  accuracy = tf.reduce_mean(tf.cast(correct_red,tf.float32))
 
 
   sample = 20
-  iters = 2000
+  iters = 500
   losses = np.zeros(iters/sample)
   with tf.Session() as sess:
     tf.global_variables_initializer().run()
@@ -78,17 +79,17 @@ if __name__ == '__main__':
         print "  lrn",scaleto01(yval[0],False)
         losses[i/sample] = lossval
         print "  acc",accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs})
-      if (i%(sample*5)==1):
-        for k in range(13):
-          print type(Ws[k])
-          print sess.run([Ws[k]],feed_dict={X:test_data.inputs,y_:test_data.outputs})
+      #if (i%(sample*5)==1):
+      #  for k in range(13):
+      #    print type(Ws[k])
+      #    print sess.run([Ws[k]],feed_dict={X:test_data.inputs,y_:test_data.outputs})
 
     print "Accuracy!"
     print accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs})
-    #yv, yv_, cor = sess.run([y,y_,correct_pred],feed_dict={X:test_data.inputs,y_:test_data.outputs})
-    #print "cor",cor
-    #print "yv",yv
-    #print "yv_",yv_
+    yv, yv_, cor = sess.run([y,y_,correct_pred],feed_dict={X:test_data.inputs,y_:test_data.outputs})
+    print "cor",cor[:50]
+    print "yv",yv[:50]
+    print "yv_",yv_[:50]
   plt.figure(1)
   plt.plot(losses)
   plt.xlabel("iter/"+str(sample))
