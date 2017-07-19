@@ -24,7 +24,7 @@ from common import *
 #    return tf.tanh(outpre),w
 #  return lut
 
-def lutN(N,sigma):
+def XlutN(N,sigma):
   def lut(x):
     def mv_norm(x,i):
       u = bitfield(i,N)
@@ -41,6 +41,37 @@ def lutN(N,sigma):
     norms_stack = tf.stack(norms,axis=1)
     outpre = tf.reduce_sum(norms_stack*w,axis=1)
     return tf.tanh(outpre),w
+  return lut
+
+def lutN(N,sigma=None):
+  def bits(n):
+    bstr = bitstr(n,N)
+    return [int(digit) for digit in bstr]
+  def lut(x):
+    Xs = [[],[]]
+    if type(x) is not list:
+      x = [x[:,i] for i in range(N)]
+    for n in range(N):
+      Xs[0].append(tf.expand_dims(tf.clip_by_value(1-tf.abs(x[n]+1)/2.0,0.0,1.0),1))
+      Xs[1].append(tf.expand_dims(tf.clip_by_value(1-tf.abs(x[n]-1)/2.0,0.0,1.0),1))
+    w = tf.Variable(tf.random_normal([2**N],mean=0,stddev=0.5))
+    out = tf.tile(tf.reshape(w,[1,2**N]),[tf.shape(Xs[0][0])[0],1])
+    for n in range(N):
+      mid = 2**(N-n-1)
+      out = out[:,0:mid]*Xs[0][n] + out[:,mid:]*Xs[1][n]
+    return tf.squeeze(out),w
+    #out = None
+    #if type(x) is list:
+    #  out = tf.fill(tf.shape(x[0]),0.0)
+    #else:
+    #  out = tf.fill(tf.shape(x[:,0]),0.0)
+    #for i in range(2**N):
+    #  bs = bits(i)
+    #  l = w[i]
+    #  for n in range(N):
+    #    l = l*Xs[bs[n]][n]
+    #  out = out + l
+    #return out,w
   return lut
 
 def binary_reg(W):

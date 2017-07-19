@@ -22,12 +22,14 @@ class Lutdata(Dataset):
     self.N = N
     self.f = f
     data = np.zeros(2**N).astype(int)
+    X,y = np.zeros((2**N,N)), np.zeros((2**N))
     for i in range(2**N):
-      data[i] = f(i,N)
-    Dataset.__init__(self,data,data)
+      X[i] = bitfield(i,N)
+      y[i] = f(i,N)
+    Dataset.__init__(self,Data(X,y),Data(X,y))
 
   def next_data(self,k):
-    X,y = np.zeros((k,self.N)),np.zeros(k)
+    X,y = np.zeros((k,self.N)),np.zeros((k))
     for i in range(k):
       ri = np.random.randint(0,2**self.N)
       X[i], y[i] = bitfield(ri,self.N), scaleto11(self.f(ri,self.N))
@@ -35,7 +37,7 @@ class Lutdata(Dataset):
 
   @property
   def test(self):
-    return self.test
+    return self.test_data
 
 class Unaryopdata(Dataset):
   def __init__(self,f,inbits,outbits):
