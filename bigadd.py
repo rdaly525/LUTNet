@@ -19,10 +19,10 @@ if __name__ == '__main__':
   Xbits = 2*bits
   ybits = 7
   
-  def sub(a,b):
+  def add(a,b):
     return a+b
 
-  data = datasets.Binopdata(sub,Xbits/2,ybits)
+  data = datasets.Binopdata(add,Xbits/2,ybits)
   test_data = data.test
   print test_data.inputs[6], test_data.outputs[6]
   data.next_data(6)
