@@ -83,10 +83,10 @@ def MuxTriangle(N):
     for n in range(N):
       mid = 2**(N-n-1)
       out = out[:,0:mid]*S0[:,n] + out[:,mid:]*S1[:,n]
-    return tf.squeeze(out)
+    return out[:,0]
   return mux
 
-def lutN(N,kind="gaussian",sigma=1):
+def LutN(N,kind="gaussian",sigma=1):
   def lut(x):
     W = tf.Variable(tf.random_normal([2**N],mean=0,stddev=0.5))
     if type(x) is list:
@@ -144,7 +144,7 @@ def randConnection(inW,outW):
 
 def lutlayerrand(N,sigma,inW,outW):
   assert outW >=1
-  lutfun = lutN(N,sigma)
+  lutfun = LutN(N,"gaussian",sigma)
 
   def layer(X):
     assert X.shape[1] == inW

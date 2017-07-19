@@ -34,7 +34,7 @@ if __name__ == '__main__':
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
   c0 = tf.fill(tf.shape(X[:,0]),-1.0)
 
-  lut4 = lutN(4)
+  lut4 = LutN(4,kind="triangle")
   Ws = [None for i in range(9)]
   l00,Ws[0] = lut4([X[:,0],X[:,2],X[:,4],c0])
   l01,Ws[1] = lut4([X[:,0],X[:,2],X[:,4],c0])
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     tf.global_variables_initializer().run()
     wval = None
     for i in range(iters):
-      tdata = data.next_data(32,False)
+      tdata = data.next_data(31,False)
       _,yval,lossval = sess.run([train_step,y,loss],feed_dict={X:tdata[0],y_:tdata[1]})
       if (i%sample==0):
         print lossval, "("+str(i)+"/"+str(iters)+")"
