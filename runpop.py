@@ -34,7 +34,7 @@ if __name__ == '__main__':
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
   c0 = tf.fill(tf.shape(X[:,0]),-1.0)
 
-  lut4 = lutN(4,1)
+  lut4 = lutN(4)
   Ws = [None for i in range(9)]
   l00,Ws[0] = lut4([X[:,0],X[:,2],X[:,4],c0])
   l01,Ws[1] = lut4([X[:,0],X[:,2],X[:,4],c0])

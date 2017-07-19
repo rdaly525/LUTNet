@@ -24,54 +24,75 @@ from common import *
 #    return tf.tanh(outpre),w
 #  return lut
 
-def XlutN(N,sigma):
-  def lut(x):
-    def mv_norm(x,i):
+
+#Does not take lists!
+def Mux(N,kind,sigma=1):
+  if kind=="gaussian":
+    return MuxGaussian(N,sigma)
+  if kind=="triangle":
+    return MuxTriangle(N)
+  assert(0)
+
+
+def check_mux_inputs(I,S,N):
+  #one of I or S has to have two dimensions
+  dI,dS=None,None
+  assert type(I) is not list
+  assert type(S) is not list
+  dI = len(I.get_shape().as_list())
+  dS = len(S.get_shape().as_list())
+  #Verify that one of the inputs is just weights
+  assert (dI==1 and dS==2) or (dI==2 and dS==1)
+  if dI==1:
+    I = tf.expand_dims(I,0)
+  if dS==1:
+    S = tf.expand_dims(S,0)
+  
+  #Verify that dimensions are correct
+  assert I.get_shape().as_list()[1] == 2**N
+  assert S.get_shape().as_list()[1] == N
+  return I,S
+
+def MuxGaussian(N,sigma):
+  def mux(I,S):
+    #I and S are now both 2 dimensions
+    I,S = check_mux_inputs(I,S,N)
+    def mv_norm(s,i):
       u = bitfield(i,N)
       front = (1+1/math.e**(2.0/sigma))**(-N)
-      xnorm = x-u
-      l2 = tf.reduce_sum(xnorm*xnorm,axis=1)
+      snorm = s-u
+      l2 = tf.reduce_sum(snorm*snorm,axis=1)
       return front*tf.exp(l2*(-0.5/sigma))
-
-    if type(x) is list:
-      x = tf.stack(x,axis=1)
-    assert x.shape[1]==N
-    w = tf.Variable(tf.random_normal([2**N],mean=0,stddev=0.5))
-    norms = [mv_norm(x,i) for i in range(2**N)]
+    
+    norms = [mv_norm(S,i) for i in range(2**N)]
     norms_stack = tf.stack(norms,axis=1)
-    outpre = tf.reduce_sum(norms_stack*w,axis=1)
-    return tf.tanh(outpre),w
-  return lut
+    outpre = tf.reduce_sum(norms_stack*I,axis=1)
+    return tf.tanh(outpre)
+  return mux
 
-def lutN(N,sigma=None):
+def MuxTriangle(N):
   def bits(n):
     bstr = bitstr(n,N)
     return [int(digit) for digit in bstr]
-  def lut(x):
-    Xs = [[],[]]
-    if type(x) is not list:
-      x = [x[:,i] for i in range(N)]
-    for n in range(N):
-      Xs[0].append(tf.expand_dims(tf.clip_by_value(1-tf.abs(x[n]+1)/2.0,0.0,1.0),1))
-      Xs[1].append(tf.expand_dims(tf.clip_by_value(1-tf.abs(x[n]-1)/2.0,0.0,1.0),1))
-    w = tf.Variable(tf.random_normal([2**N],mean=0,stddev=0.5))
-    out = tf.tile(tf.reshape(w,[1,2**N]),[tf.shape(Xs[0][0])[0],1])
+  def mux(I,S):
+    #I and S are now both 2 dimensions
+    I,S = check_mux_inputs(I,S,N)
+    S0 = tf.expand_dims(tf.maximum(0.0,1-tf.abs(S+1)/2.0),2)
+    S1 = tf.expand_dims(tf.maximum(0.0,1-tf.abs(S-1)/2.0),2)
+    out = I
     for n in range(N):
       mid = 2**(N-n-1)
-      out = out[:,0:mid]*Xs[0][n] + out[:,mid:]*Xs[1][n]
-    return tf.squeeze(out),w
-    #out = None
-    #if type(x) is list:
-    #  out = tf.fill(tf.shape(x[0]),0.0)
-    #else:
-    #  out = tf.fill(tf.shape(x[:,0]),0.0)
-    #for i in range(2**N):
-    #  bs = bits(i)
-    #  l = w[i]
-    #  for n in range(N):
-    #    l = l*Xs[bs[n]][n]
-    #  out = out + l
-    #return out,w
+      out = out[:,0:mid]*S0[:,n] + out[:,mid:]*S1[:,n]
+    return tf.squeeze(out)
+  return mux
+
+def lutN(N,kind="gaussian",sigma=1):
+  def lut(x):
+    W = tf.Variable(tf.random_normal([2**N],mean=0,stddev=0.5))
+    if type(x) is list:
+      x = tf.stack(x,axis=1)
+    out = Mux(N,kind,sigma)(W,x)
+    return out,W
   return lut
 
 def binary_reg(W):
