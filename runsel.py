@@ -11,22 +11,21 @@ if __name__ == '__main__':
 
   sigma = 1
   N = 4
-  powN = 2**N
-  selval = 3
-  data = datasets.Seldata(N,selval)
+  K = 18
+  selval = 16
+  data = datasets.Seldata(K,selval)
   test_data = data.test
   print data.next_data(3)
   lr = 0.1
   rw = 0.01
-  X = tf.placeholder(tf.float32, shape=[None,powN])
+  X = tf.placeholder(tf.float32, shape=[None,K])
   y_ = tf.placeholder(tf.float32, shape=[None])
-  
-  out0, W0 = SelectN(N-1,"triangle")(X[:,0:powN/2])
-  out1, W1 = SelectN(N-1,"triangle")(X[:,powN/2:])
-  print out0, out1,tf.stack([out0,out1],axis=1)
-  y, W2 = SelectN(1,"triangle")([out0,out1])
-  print y,y_,W0,W1,W2
-  loss = tf.nn.l2_loss(y-y_) + rw*binary_reg([W0,W1,W2])
+  print X
+  kind = "gaussian"
+  kind = "triangle"
+  y, W = SelectK(K,kind)(X)
+  print y,y_,W
+  loss = tf.nn.l2_loss(y-y_) + rw*binary_reg(W)
   train_step = tf.train.GradientDescentOptimizer(lr).minimize(loss)
   
   yscale = y > 0
@@ -35,7 +34,7 @@ if __name__ == '__main__':
   accuracy = tf.reduce_mean(tf.cast(correct_pred,tf.float32))
  
   sample = 20
-  iters = 100
+  iters = 500
   with tf.Session() as sess:
     tf.global_variables_initializer().run()
     wval = None
@@ -48,13 +47,13 @@ if __name__ == '__main__':
         print "  lrn",yval[0]
         print "  acc",accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs})
       if (i%(sample*4)==39):
-        curWs = sess.run([W0,W1,W2],feed_dict={X:test_data.inputs,y_:test_data.outputs})
+        curWs = sess.run([W],feed_dict={X:test_data.inputs,y_:test_data.outputs})
         print "CURWs", curWs
         yV,_yV = sess.run([yscale,y_scale],feed_dict={X:test_data.inputs,y_:test_data.outputs})
         print "yV",yV
         print "_yv", _yV
     print "Accuracy!"
     print accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs})
-    curWs = sess.run([W0,W1,W2],feed_dict={X:test_data.inputs,y_:test_data.outputs})
+    curWs = sess.run([W],feed_dict={X:test_data.inputs,y_:test_data.outputs})
     print "CURWs", curWs
 

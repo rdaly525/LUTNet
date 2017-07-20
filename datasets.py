@@ -17,32 +17,33 @@ class Dataset:
     self.train_data = train
     self.test_data = test
 
+#K is number of mux inputs
 class Seldata(Dataset):
-  def __init__(self,N,selval):
-    assert N < 5
+  def __init__(self,K,selval):
+    assert selval < K
+    assert K < 20
     self.cnt = 0
-    self.N = N
-    self.powN = 2**N
+    self.K = K
     self.selval = selval
-    X,y = np.zeros((2**(self.powN),self.powN)), np.zeros((2**self.powN))
-    for i in range(2**self.powN):
-      X[i] = bitfield(i,self.powN)
+    X,y = np.zeros((2**self.K,self.K)), np.zeros((2**self.K))
+    for i in range(2**self.K):
+      X[i] = bitfield(i,self.K)
       y[i] = self.sel(i)
     Dataset.__init__(self,Data(X,y),Data(X,y))
   def sel(self,x):
-    return int(bitstr(x,self.powN)[self.selval])
+    return int(bitstr(x,self.K)[self.selval])
   
   def next_data(self,k):
-    X,y = np.zeros((k,self.powN)), np.zeros((k))
+    X,y = np.zeros((k,self.K)), np.zeros((k))
     for i in range(k):
-      ri = np.random.randint(0,2**self.powN)
-      X[i], y[i] = bitfield(ri,self.powN), scaleto11(self.sel(ri))
+      ri = np.random.randint(0,2**self.K)
+      X[i], y[i] = bitfield(ri,self.K), scaleto11(self.sel(ri))
     return [X,y]
       
     
-    #max_i = 2**self.powN
+    #max_i = 2**self.K
     #r = np.random.randint(0,max_i)
-    #X,y = np.zeros((k,self.powN)), np.zeros((k))
+    #X,y = np.zeros((k,self.K)), np.zeros((k))
     #
     #if r+k < max_i:
     #  X = self.train_data.inputs[r:r+k]

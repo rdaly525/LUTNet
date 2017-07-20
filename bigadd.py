@@ -28,7 +28,9 @@ if __name__ == '__main__':
   X = tf.placeholder(tf.float32, shape=[None,Xbits])
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
   c0 = tf.fill(tf.shape(X[:,0]),-1.0)
-  lut4 = LutN(4,kind="triangle")
+  kind="triangle"
+  kind="gaussian"
+  lut4 = LutN(4,kind)
   Ws = [None for i in range(13)]
   
   Wvalues = [tf.placeholder(tf.float32,shape=16) for i in range(13)]

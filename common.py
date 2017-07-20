@@ -19,10 +19,11 @@ def make_feed_dict(phs, curs):
     feed_dict[phs[i]] = news[i]
   return feed_dict
 
-def bitstr(i,N):
+def bitstr(i,N=None):
   ret = bin(i)[2:][::-1]
-  for _ in range(N-len(ret)):
-    ret = ret+'0'
+  if N:
+    for _ in range(N-len(ret)):
+      ret = ret+'0'
   return ret
 
 def bitfield(i,N):

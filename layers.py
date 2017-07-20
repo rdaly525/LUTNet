@@ -5,6 +5,9 @@ import sys
 
 from common import *
 
+def Var(k):
+  return tf.Variable(tf.random_normal([k],mean=0,stddev=0.5))
+
 #Does not take lists!
 def Mux(N,kind,sigma=1):
   if kind=="gaussian":
@@ -46,6 +49,7 @@ def MuxGaussian(N,sigma):
     norms = [mv_norm(S,i) for i in range(2**N)]
     norms_stack = tf.stack(norms,axis=1)
     outpre = tf.reduce_sum(norms_stack*I,axis=1)
+    #return outpre
     return tf.tanh(outpre)
   return mux
 
@@ -59,15 +63,18 @@ def MuxTriangle(N):
     S0 = tf.expand_dims(tf.maximum(0.0,1-tf.abs(S+1)/2.0),2)
     S1 = tf.expand_dims(tf.maximum(0.0,1-tf.abs(S-1)/2.0),2)
     out = I
-    for n in range(N):
-      mid = 2**(N-n-1)
+    for n in reversed(range(N)):
+      mid = 2**n
       out = out[:,0:mid]*S0[:,n] + out[:,mid:]*S1[:,n]
     return out[:,0]
   return mux
 
 def LutN(N,kind="gaussian",sigma=1):
-  def lut(x):
-    W = tf.Variable(tf.random_normal([2**N],mean=0,stddev=0.5))
+  def lut(x,W=None):
+    if W is not None:
+      assert W.get_shape().as_list()[0] == 2**N
+    else:
+      W = Var(2**N)
     if type(x) is list:
       x = tf.stack(x,axis=1)
     out = Mux(N,kind,sigma)(W,x)
@@ -76,12 +83,52 @@ def LutN(N,kind="gaussian",sigma=1):
 
 
 def SelectN(N,kind="gaussian",sigma=1):
-  def sel(x):
-    W = tf.Variable(tf.random_normal([N],mean=0,stddev=0.5))
+  def sel(x,W=None):
+    if W is not None:
+      assert W.get_shape().as_list()[0] == N
+    else:
+      W = Var(N)
     if type(x) is list:
       x = tf.stack(x,axis=1)
     out = Mux(N,kind,sigma)(x,W)
     return out,W
+  return sel
+
+
+#Do not use K=1
+#Pass in W at your own risk
+def SelectK(K,kind="gaussian",sigma=1):
+  def sel(x,W=None):
+    if type(x) is list:
+      x = tf.stack(x,axis=1)
+    assert x.get_shape().as_list()[1]==K
+    
+    #base case
+    if K==1:
+      return x[:,0],W
+    
+    sbits = len(bitstr(K-1))
+    if W is not None:
+      #Need to get the bottom bits from W
+      print "w",K,sbits, W
+      l = W.get_shape().as_list()[0] 
+      if sbits != l:
+        W = W[0:sbits]
+      print "w2",K,sbits, W
+      assert W.get_shape().as_list()[0] == sbits
+    else:
+      W = Var(sbits)
+    print "H",K,sbits
+    if 2**sbits==K:
+      out,_ = SelectN(sbits,kind,sigma)(x,W)
+      return out,W
+    else:
+      mid = 2**(sbits-1)
+      out0,_ = SelectN(sbits-1,kind,sigma)(x[:,0:mid],W[0:sbits-1])
+      out1,_ = SelectK(K-mid,kind,sigma)(x[:,mid:],W[0:sbits-1])
+      print "0",out0,out1
+      out,_ = SelectN(1,kind,sigma)([out0,out1],W[sbits-1:])
+      return out,W
   return sel
 
 def binary_reg(W):
