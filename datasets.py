@@ -17,6 +17,43 @@ class Dataset:
     self.train_data = train
     self.test_data = test
 
+class Seldata(Dataset):
+  def __init__(self,N,selval):
+    assert N < 5
+    self.cnt = 0
+    self.N = N
+    self.powN = 2**N
+    self.selval = selval
+    X,y = np.zeros((2**(self.powN),self.powN)), np.zeros((2**self.powN))
+    for i in range(2**self.powN):
+      X[i] = bitfield(i,self.powN)
+      y[i] = self.sel(i)
+    Dataset.__init__(self,Data(X,y),Data(X,y))
+  def sel(self,x):
+    return int(bitstr(x,self.powN)[self.selval])
+  
+  def next_data(self,k):
+    X,y = np.zeros((k,self.powN)), np.zeros((k))
+    for i in range(k):
+      ri = np.random.randint(0,2**self.powN)
+      X[i], y[i] = bitfield(ri,self.powN), scaleto11(self.sel(ri))
+    return [X,y]
+      
+    
+    #max_i = 2**self.powN
+    #r = np.random.randint(0,max_i)
+    #X,y = np.zeros((k,self.powN)), np.zeros((k))
+    #
+    #if r+k < max_i:
+    #  X = self.train_data.inputs[r:r+k]
+    #  y = self.train_data.outputs[r:r+k]
+    #else:
+      
+
+  @property
+  def test(self):
+    return self.test_data
+
 class Lutdata(Dataset):
   def __init__(self,N,f):
     self.N = N

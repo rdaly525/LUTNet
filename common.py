@@ -31,7 +31,7 @@ def bitfield(i,N):
   return np.array(bits).astype(float)
 
 def scaleto11(val,check=True):
-  if type(val) is int:
+  if type(val) is not list and type(val) is not np.ndarray:
     val = [val]
   if type(val) is list:
     val = np.array(val)

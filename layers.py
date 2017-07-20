@@ -5,26 +5,6 @@ import sys
 
 from common import *
 
-#def lutN1(N,sigma):
-#  assert sigma==1
-#  def lut(x):
-#    def mv_norm(x,i):
-#      u = bitfield(i,N)
-#      #Little sketchy math to figure out the value .792. 
-#      front = math.exp(.792*N)*(((2*math.pi)**N))**(-0.5)
-#      xnorm = x-u
-#      l2 = tf.reduce_sum(xnorm*xnorm,axis=1)
-#      return front*tf.exp(l2*(-1/(2.0)))
-#    
-#    assert x.shape[1]==N
-#    w = tf.Variable(tf.random_normal([2**N]))
-#    norms = [mv_norm(x,i) for i in range(2**N)]
-#    norms_stack = tf.stack(norms,axis=1)
-#    outpre = tf.reduce_sum(norms_stack*w,axis=1)
-#    return tf.tanh(outpre),w
-#  return lut
-
-
 #Does not take lists!
 def Mux(N,kind,sigma=1):
   if kind=="gaussian":
@@ -32,7 +12,6 @@ def Mux(N,kind,sigma=1):
   if kind=="triangle":
     return MuxTriangle(N)
   assert(0)
-
 
 def check_mux_inputs(I,S,N):
   #one of I or S has to have two dimensions
@@ -94,6 +73,16 @@ def LutN(N,kind="gaussian",sigma=1):
     out = Mux(N,kind,sigma)(W,x)
     return out,W
   return lut
+
+
+def SelectN(N,kind="gaussian",sigma=1):
+  def sel(x):
+    W = tf.Variable(tf.random_normal([N],mean=0,stddev=0.5))
+    if type(x) is list:
+      x = tf.stack(x,axis=1)
+    out = Mux(N,kind,sigma)(x,W)
+    return out,W
+  return sel
 
 def binary_reg(W):
   if not type(W) is list:
