@@ -11,8 +11,8 @@ if __name__ == '__main__':
 
   sigma = 1
   N = 4
-  K = 18
-  selval = 16
+  K = 13
+  selval = 7
   data = datasets.Seldata(K,selval)
   test_data = data.test
   print data.next_data(3)
@@ -22,7 +22,7 @@ if __name__ == '__main__':
   y_ = tf.placeholder(tf.float32, shape=[None])
   print X
   kind = "gaussian"
-  kind = "triangle"
+  #kind = "triangle"
   y, W = SelectK(K,kind)(X)
   print y,y_,W
   loss = tf.nn.l2_loss(y-y_) + rw*binary_reg(W)

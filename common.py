@@ -1,19 +1,22 @@
 import numpy as np
 
+
+def flatten_list(l):
+  return [item for sublist in l for item in sublist]
+
 #phs=placeholders
 #curs=current values
-def make_feed_dict(phs, curs):
+def make_feed_dict(phs, curs,thresh=0,prob=1):
   assert len(phs) == len(curs)
   def quant(x):
-    if (x >0.8):
+    if (x >=thresh and np.random.uniform() < prob):
       return 1
-    elif (x < -0.8):
+    elif (x < -thresh and np.random.uniform() < prob):
       return -1
     else:
-      return 0
+      return np.random.normal(0,0.5)
   quant = np.vectorize(quant,otypes=[np.float])
   news = [quant(cur) for cur in curs]
-  print news
   feed_dict = {}
   for i in range(len(phs)):
     feed_dict[phs[i]] = news[i]

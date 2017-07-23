@@ -41,7 +41,8 @@ def MuxGaussian(N,sigma):
     I,S = check_mux_inputs(I,S,N)
     def mv_norm(s,i):
       u = bitfield(i,N)
-      front = (1+1/math.e**(2.0/sigma))**(-N)
+      #front = (1+1/math.e**(2.0/sigma))**(-N)
+      front = 1.0
       snorm = s-u
       l2 = tf.reduce_sum(snorm*snorm,axis=1)
       return front*tf.exp(l2*(-0.5/sigma))
@@ -73,6 +74,7 @@ def LutN(N,kind="gaussian",sigma=1):
   def lut(x,W=None):
     if W is not None:
       assert W.get_shape().as_list()[0] == 2**N
+      pass
     else:
       W = Var(2**N)
     if type(x) is list:
@@ -86,6 +88,7 @@ def SelectN(N,kind="gaussian",sigma=1):
   def sel(x,W=None):
     if W is not None:
       assert W.get_shape().as_list()[0] == N
+      pass
     else:
       W = Var(N)
     if type(x) is list:
@@ -102,7 +105,6 @@ def SelectK(K,kind="gaussian",sigma=1):
     if type(x) is list:
       x = tf.stack(x,axis=1)
     assert x.get_shape().as_list()[1]==K
-    
     #base case
     if K==1:
       return x[:,0],W
@@ -110,15 +112,12 @@ def SelectK(K,kind="gaussian",sigma=1):
     sbits = len(bitstr(K-1))
     if W is not None:
       #Need to get the bottom bits from W
-      print "w",K,sbits, W
       l = W.get_shape().as_list()[0] 
       if sbits != l:
         W = W[0:sbits]
-      print "w2",K,sbits, W
       assert W.get_shape().as_list()[0] == sbits
     else:
       W = Var(sbits)
-    print "H",K,sbits
     if 2**sbits==K:
       out,_ = SelectN(sbits,kind,sigma)(x,W)
       return out,W
@@ -126,10 +125,63 @@ def SelectK(K,kind="gaussian",sigma=1):
       mid = 2**(sbits-1)
       out0,_ = SelectN(sbits-1,kind,sigma)(x[:,0:mid],W[0:sbits-1])
       out1,_ = SelectK(K-mid,kind,sigma)(x[:,mid:],W[0:sbits-1])
-      print "0",out0,out1
       out,_ = SelectN(1,kind,sigma)([out0,out1],W[sbits-1:])
       return out,W
   return sel
+
+
+def Selects(K,C,kind="gaussian",sigma=1):
+  def layer(x):
+    if type(x) is list:
+      x = tf.stack(x,axis=1)
+    assert x.get_shape().as_list()[1]==K
+    select = SelectK(K,kind,sigma=sigma)
+    outs = [None for c in range(C)]
+    selWs = [None for c in range(C)]
+    for c in range(C):
+      outs[c], selWs[c] = select(x)
+    return tf.stack(outs,axis=1),selWs
+  return layer
+
+#K inputs to each mux
+#C LutNs
+def SelectLutLayer(K,N,C,kind="gaussian",sigma=1):
+  def layer(x):
+    if type(x) is list:
+      x = tf.stack(x,axis=1)
+    
+    assert x.get_shape().as_list()[1]==K
+    Kup = 2**(len(bitstr(K)))
+    if K!=Kup:
+      c0 = tf.fill(tf.shape(x[:,0:(Kup-K)]),-1.0)
+      x = tf.concat([x,c0],axis=1)
+    assert x.get_shape().as_list()[1]==Kup
+
+    selects = Selects(Kup,N,kind,sigma=sigma)
+    lut = LutN(N,kind,sigma=sigma)
+    selWs = [ [None for n in range(N)] for c in range(C)]
+    outs = [None for c in range(C)]
+    lutWs = [None for c in range(C)]
+    for c in range(C):
+      muxout, selWs[c] = selects(x)
+      outs[c],lutWs[c] = lut(muxout)
+    return tf.stack(outs,axis=1),selWs,lutWs
+  return layer
+
+def SelectLutLayers(N,inW,outW,L,kind="gaussian",sigma=1):
+  def layers(x):
+    if type(x) is list:
+      x = tf.stack(x,axis=1)
+    selWs = [None for l in range(L)]
+    lutWs = [None for l in range(L)]
+    curl = x
+    curbits = inW
+    for li in range(L):
+      nextbits = int(outW + ((L-1-li)*1.0*(inW-outW))/(L))
+      curl, selWs[li], lutWs[li] = SelectLutLayer(curbits,N,nextbits,kind,sigma)(curl)
+      curbits = nextbits
+    return curl, selWs,lutWs
+  return layers
 
 def binary_reg(W):
   if not type(W) is list:
