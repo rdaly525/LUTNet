@@ -8,19 +8,19 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
 
-  data = datasets.Mnistdata(ds=4)
+  data = datasets.Mnistdata(ds=2)
   sigma = 1
   N = 4
   lr = 0.1
   rw = 0.01
-  layers = 1
-  Xbits = 7*7
-  ybits = 9
+  layers = 8
+  Xbits = 14*14
+  ybits = 10
 
   X = tf.placeholder(tf.float32, shape=[None,Xbits])
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
   
-  y, selWs, lutWs = SelectLutLayers(N,Xbits,ybits,layers)(X)
+  y, selWs, lutWs = SelectLutLayers(N,Xbits,ybits,layers,kind="triangle",sigma=1)(X)
   
   Ws = flatten_list(flatten_list(selWs)) + flatten_list(lutWs)
   print "Total luts", len(flatten_list(lutWs))
@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
   print "H1"
   sample = 20
-  iters = 5000
+  iters = 500
   losses = np.zeros(iters/sample)
   with tf.Session() as sess:
     print "H2"

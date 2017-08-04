@@ -70,6 +70,22 @@ def MuxTriangle(N):
     return out[:,0]
   return mux
 
+def MuxMixed(N):
+  def bits(n):
+    bstr = bitstr(n,N)
+    return [int(digit) for digit in bstr]
+  def mux(I,S):
+    #I and S are now both 2 dimensions
+    I,S = check_mux_inputs(I,S,N)
+    S0 = tf.expand_dims(tf.maximum(0.0,1-tf.abs(S+1)/2.0),2)
+    S1 = tf.expand_dims(tf.maximum(0.0,1-tf.abs(S-1)/2.0),2)
+    out = I
+    for n in reversed(range(N)):
+      mid = 2**n
+      out = out[:,0:mid]*S0[:,n] + out[:,mid:]*S1[:,n]
+    return out[:,0]
+  return mux
+
 def LutN(N,kind="gaussian",sigma=1):
   def lut(x,W=None):
     if W is not None:
