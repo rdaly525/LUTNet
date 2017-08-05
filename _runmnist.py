@@ -13,52 +13,48 @@ if __name__ == '__main__':
   N = 4
   lr = 0.1
   rw = 0.01
+  layers = 8
   Xbits = 14*14
-  layers = [196,100,50,25,15,10]
   ybits = 10
-  
 
   X = tf.placeholder(tf.float32, shape=[None,Xbits])
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
   
-  y, Ws = MacroLutLayer(N,layers)(X)
+  y, selWs, lutWs = SelectLutLayers(N,Xbits,ybits,layers,kind="triangle",sigma=1)(X)
   
-  totLuts = 0
-  for w in Ws:
-    shape = w.get_shape().as_list()
-    totLuts += shape[0]*shape[1]
-  print("Total Luts", totLuts//2**N)
+  Ws = flatten_list(flatten_list(selWs)) + flatten_list(lutWs)
+  print "Total luts", len(flatten_list(lutWs))
+  print "Total Muxes", len(flatten_list(flatten_list(selWs)))
 
   loss = tf.nn.l2_loss(y-y_) + rw*binary_reg(Ws)
   train_step = tf.train.GradientDescentOptimizer(lr).minimize(loss)
-  train_step2 = tf.train.GradientDescentOptimizer(lr//10).minimize(loss)
   
   yscale = y > 0
   y_scale = y_ > 0
   correct_pred = tf.reduce_all(tf.equal(yscale,y_scale),1)
   accuracy = tf.reduce_mean(tf.cast(correct_pred,tf.float32))
 
+  print "H1"
   sample = 20
-  iters = 4000
-  batch = 32
-  losses = np.zeros(iters//sample)
+  iters = 500
+  losses = np.zeros(iters/sample)
   with tf.Session() as sess:
+    print "H2"
     tf.global_variables_initializer().run()
     wval = None
     for i in range(iters):
-      tdata = data.next_data(batch)
-      yval,lossval = None,None
-      if (i < 2000):
-        _,yval,lossval = sess.run([train_step,y,loss],feed_dict={X:tdata[0],y_:tdata[1]})
-      else:
-        _,yval,lossval = sess.run([train_step2,y,loss],feed_dict={X:tdata[0],y_:tdata[1]})
+      tdata = data.next_data(32)
+      print "H3"
+      _,yval,lossval,co_ped,ac= sess.run([train_step,y,loss,correct_pred,accuracy],feed_dict={X:tdata[0],y_:tdata[1]})
       if (i%sample==0):
-        print(lossval, "("+str(i)+"/"+str(iters)+")")
-        print("  cor",scaleto01(tdata[1][0]))
-        print("  lrn",scaleto01(yval[0],False))
-        losses[i//sample] = lossval
-    print("Accuracy!")
-    print(accuracy.eval(feed_dict={X:data.test[0],y_:data.test[1]}))
+        print lossval, "("+str(i)+"/"+str(iters)+")"
+        print "  cor",scaleto01(tdata[1][0])
+        print "  lrn",scaleto01(yval[0],False)
+        losses[i/sample] = lossval
+        print "co,ac",co_ped,ac
+    print "Accuracy!"
+    print accuracy.eval(feed_dict={X:data.test[0],y_:data.test[1]})
+    print sess.run(Ws[0])
   plt.figure(1)
   plt.plot(losses)
   plt.xlabel("iter/"+str(sample))
