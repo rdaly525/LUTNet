@@ -90,7 +90,6 @@ class Unaryopdata(Dataset):
       i = a
       X[i] = bitfield(a,inbits)
       y[i] = bitfield(c,outbits)
-    print X.shape, y.shape
     Dataset.__init__(self,Data(X,y),Data(X,y))
 
   def next_data(self,k,rand=True):
@@ -124,7 +123,6 @@ class Binopdata(Dataset):
     self.outbits = outbits
     inbitrange = 2**inbits
     X,y = np.zeros((inbitrange**2,2*inbits)),np.zeros((inbitrange**2,outbits))
-    print X.shape, y.shape
     for a in range(inbitrange):
       for b in range(inbitrange):
         c = self.f(a,b)
@@ -172,7 +170,7 @@ class Mnistdata(Dataset):
       return [self.downsample(X[0]),X[1]]
     if len(X.shape)==2:
       X = self.reshape(X)
-    return X[:,::self.ds,::self.ds].reshape(X.shape[0],(28/self.ds)**2)
+    return X[:,::self.ds,::self.ds].reshape(X.shape[0],(28//self.ds)**2)
 
   def next_data(self,k):
     data = self.data.train.next_batch(k)

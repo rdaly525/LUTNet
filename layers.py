@@ -74,9 +74,9 @@ def MuxSTriangle(N,K):
     out = tf.expand_dims(I,0)
     for n in reversed(range(N)):
       mid = 2**n
-      print "N", mid, out
+      print( "N", mid, out)
       out = out[:,:,0:mid]*S0[:,:,n:n+1] + out[:,:,mid:]*S1[:,:,n:n+1]
-      print out
+      print( out)
     return out[:,:,0]
   return mux
 
@@ -132,10 +132,10 @@ def LutLayer(N,K0,K1):
     assert len(xshape) == 2
     assert xshape[1] == K0
     
-    mulfac = N*K1/K0
+    mulfac = N*K1//K0
     if mulfac > 1:
       x = tf.tile(x,[1,mulfac])
-    print x
+    print( x)
     #Adjust input to a multiple of K1xN
     kmod = (K1*N)%K0
     if kmod != 0:
@@ -161,7 +161,7 @@ def MacroLutLayer(N,Ls):
     Ws = [None for i in range(L)]
     l = x
     for i in range(L):
-      print "A", l, Ls[i], Ls[i+1]
+      print( "A", l, Ls[i], Ls[i+1])
       l, Ws[i] = LutLayer(N,Ls[i],Ls[i+1])(l)
     return l, Ws
   return layer
@@ -277,7 +277,7 @@ def binary_reg(W):
   return tf.add_n(ws)
 
 def randConnection(inW,outW):
-  minNum = int(4*outW/inW)
+  minNum = int(4*outW//inW)
   assert minNum > 0
   choices = [[i,minNum] for i in range(inW)]
   rerror = 4*outW-inW*minNum
@@ -287,7 +287,7 @@ def randConnection(inW,outW):
   cons = np.zeros((outW,4)).astype(int)
   for i in range(outW):
     if len(choices) < 4 :
-      print choices
+      print( choices)
       #Have to distribute the rest 
       #could have more than 1 i slot
       #TODO Should distribute evenly for the more than one slot case
@@ -295,7 +295,7 @@ def randConnection(inW,outW):
       di=0
       for choice in choices:
         for _ in range(choice[1]):
-          di = j/4
+          di = j//4
           cons[i+di][j%4] = choice[0]
           j +=1
       assert j%4==0
@@ -335,7 +335,7 @@ def lutlayerrand(N,sigma,inW,outW):
       layer_outputs.append(lut_out)
       Ws.append(W)
     outs = tf.stack(layer_outputs,axis=1)
-    print str(inW)+"->"+str(outW),ri_stats
+    print( str(inW)+"->"+str(outW),ri_stats)
     return outs,Ws
   return layer
     
@@ -343,7 +343,7 @@ def lutlayersimp(N,sigma,inW,outW):
   def adjust(X,w):
     bnum = tf.shape(X)[0]
     if (w%N !=0):
-      adj = w/N
+      adj = w//N
       X = tf.concat([X,tf.fill([bnum,adj],-1.0)])
 
   def layers(X):
@@ -378,8 +378,8 @@ def lutConvlayer(N,H,W,Cin,Cout):
   assert Cin==4
   lut = lutN(N,1)
   def layer(X):
-    print X
-    print [H,W,Cin]
+    print( X)
+    print( [H,W,Cin])
     assert X.shape[1:] == [H,W,Cin]
     Ws = []
     luth = []
