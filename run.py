@@ -55,23 +55,23 @@ if __name__ == '__main__':
       tdata = data.next_data(16)
       _,yval,lossval = sess.run([train_step,y,loss],feed_dict={X:tdata[0],y_:tdata[1]})
       if (i%sample==0):
-        print lossval, "("+str(i)+"/"+str(iters)+")"
-        print "  ",scaleto01(tdata[0][0]),"=",scaleto01(tdata[1][0])
-        print "  lrn",yval[0]
-        print "  acc",accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs})
+        print(lossval, "("+str(i)+"/"+str(iters)+")")
+        print("  ",scaleto01(tdata[0][0]),"=",scaleto01(tdata[1][0]))
+        print("  lrn",yval[0])
+        print("  acc",accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs}))
       if (i%(sample*1)==0):
         curWs = sess.run([W],feed_dict={X:test_data.inputs,y_:test_data.outputs})
-        print "CURWs", curWs
+        print("CURWs", curWs)
         #yV,_yV = sess.run([yscale,y_scale],feed_dict={X:test_data.inputs,y_:test_data.outputs})
-        #print "yV",yV
-        #print "_yv", _yV
-    print "Accuracy!"
-    print accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs})
+        #print("yV",yV)
+        #print("_yv", _yV)
+    print("Accuracy!")
+    print(accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs}))
     curWs = sess.run([W])
-    print "CUR",curWs
+    print("CUR",curWs)
     fd = make_feed_dict([Wph],[curWs])
-    print "FD",fd
-    print sess.run([W_assign],feed_dict=fd)
-    print sess.run([W])
-    print accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs})
+    print("FD",fd)
+    print(sess.run([W_assign],feed_dict=fd))
+    print(sess.run([W]))
+    print(accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs}))
 

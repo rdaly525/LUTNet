@@ -36,7 +36,7 @@ if __name__ == "__main__":
   for i in range(11):
     x,y = np.random.uniform(-1,1,size=2)
     l = lutN(2,1)([1 for j in range(2**n)])
-    print 1.0*i/10,l([1.0*i/10,1])
+    print(i/10,l([i/10,1]))
 
 
 

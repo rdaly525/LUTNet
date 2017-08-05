@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 import tensorflow as tf
 
@@ -28,7 +29,7 @@ if __name__ == '__main__':
 
   data = datasets.Unaryopdata(popcnt,Xbits,ybits)
   test_data = data.test
-  print test_data.inputs[6], test_data.outputs[6]
+  print(test_data.inputs[6], test_data.outputs[6])
   data.next_data(6)
   X = tf.placeholder(tf.float32, shape=[None,Xbits])
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
@@ -49,7 +50,7 @@ if __name__ == '__main__':
   l22,Ws[8] = lut4([l10,l03,c0,c0])
   
   y = tf.stack([l20,l22,l21],axis=1)
-  print "Total Luts =", len(Ws)
+  print("Total Luts =", len(Ws))
   loss = tf.nn.l2_loss(y-y_) + rw*binary_reg(Ws)
   train_step = tf.train.GradientDescentOptimizer(lr).minimize(loss)
   
@@ -61,7 +62,7 @@ if __name__ == '__main__':
 
   sample = 20
   iters = 2000
-  losses = np.zeros(iters/sample)
+  losses = np.zeros(iters//sample)
   with tf.Session() as sess:
     tf.global_variables_initializer().run()
     wval = None
@@ -69,18 +70,18 @@ if __name__ == '__main__':
       tdata = data.next_data(31,False)
       _,yval,lossval = sess.run([train_step,y,loss],feed_dict={X:tdata[0],y_:tdata[1]})
       if (i%sample==0):
-        print lossval, "("+str(i)+"/"+str(iters)+")"
-        print "  ",scaleto01(tdata[0][0]),"=",scaleto01(tdata[1][0])
-        print "  lrn",scaleto01(yval[0],False)
-        losses[i/sample] = lossval
-        print "  acc",accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs})
+        print(lossval, "("+str(i)+"/"+str(iters)+")")
+        print("  ",scaleto01(tdata[0][0]),"=",scaleto01(tdata[1][0]))
+        print("  lrn",scaleto01(yval[0],False))
+        losses[i//sample] = lossval
+        print("  acc",accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs}))
 
-    print "Accuracy!"
-    print accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs})
+    print("Accuracy!")
+    print(accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs}))
     #yv, yv_, cor = sess.run([y,y_,correct_pred],feed_dict={X:test_data.inputs,y_:test_data.outputs})
-    #print "cor",cor
-    #print "yv",yv
-    #print "yv_",yv_
+    #print("cor",cor
+    #print("yv",yv
+    #print("yv_",yv_
   plt.figure(1)
   plt.plot(losses)
   plt.xlabel("iter/"+str(sample))

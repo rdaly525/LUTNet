@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 import tensorflow as tf
 import math
@@ -204,7 +205,7 @@ def randConnection(inW,outW):
   cons = np.zeros((outW,4)).astype(int)
   for i in range(outW):
     if len(choices) < 4 :
-      print choices
+      print(choices)
       #Have to distribute the rest 
       #could have more than 1 i slot
       #TODO Should distribute evenly for the more than one slot case
@@ -212,7 +213,7 @@ def randConnection(inW,outW):
       di=0
       for choice in choices:
         for _ in range(choice[1]):
-          di = j/4
+          di = j//4
           cons[i+di][j%4] = choice[0]
           j +=1
       assert j%4==0
@@ -252,7 +253,7 @@ def lutlayerrand(N,sigma,inW,outW):
       layer_outputs.append(lut_out)
       Ws.append(W)
     outs = tf.stack(layer_outputs,axis=1)
-    print str(inW)+"->"+str(outW),ri_stats
+    print(str(inW)+"->"+str(outW),ri_stats)
     return outs,Ws
   return layer
     
@@ -260,7 +261,7 @@ def lutlayersimp(N,sigma,inW,outW):
   def adjust(X,w):
     bnum = tf.shape(X)[0]
     if (w%N !=0):
-      adj = w/N
+      adj = w//N
       X = tf.concat([X,tf.fill([bnum,adj],-1.0)])
 
   def layers(X):
@@ -295,8 +296,8 @@ def lutConvlayer(N,H,W,Cin,Cout):
   assert Cin==4
   lut = lutN(N,1)
   def layer(X):
-    print X
-    print [H,W,Cin]
+    print(X)
+    print([H,W,Cin])
     assert X.shape[1:] == [H,W,Cin]
     Ws = []
     luth = []
