@@ -6,7 +6,7 @@ import sys
 from common import *
 
 def Var(k):
-  return tf.Variable(tf.random_normal([k],mean=0,stddev=0.5))
+  return tf.Variable(tf.random_normal(k,mean=0,stddev=0.5))
 
 #Does not take lists!
 def Mux(N,kind,sigma=1):
@@ -54,50 +54,117 @@ def MuxGaussian(N,sigma):
     return tf.tanh(outpre)
   return mux
 
-def MuxTriangle(N):
-  def bits(n):
-    bstr = bitstr(n,N)
-    return [int(digit) for digit in bstr]
+#out = f(I,S)
+#I.shape == [K,2**N]
+#S.shape == [-1,K,N]
+#out.shape == [-1,K]
+def MuxSTriangle(N,K):
   def mux(I,S):
-    #I and S are now both 2 dimensions
-    I,S = check_mux_inputs(I,S,N)
+    Ishape = I.get_shape().as_list()
+    Sshape = S.get_shape().as_list()
+    assert len(Ishape) == 2
+    assert Ishape[0] == K
+    assert Ishape[1] == 2**N
+    assert len(Sshape) == 3
+    assert Sshape[1] == K
+    assert Sshape[2] == N
+
+    S0 = tf.maximum(0.0,1-tf.abs(S+1)/2.0)
+    S1 = tf.maximum(0.0,1-tf.abs(S-1)/2.0)
+    out = tf.expand_dims(I,0)
+    for n in reversed(range(N)):
+      mid = 2**n
+      print "N", mid, out
+      out = out[:,:,0:mid]*S0[:,:,n:n+1] + out[:,:,mid:]*S1[:,:,n:n+1]
+      print out
+    return out[:,:,0]
+  return mux
+
+#out = f(I,S)
+#I.shape == [-1,K,2**N]
+#S.shape == [K,N]
+#out.shape == [-1,K]
+def MuxITriangle(N,K):
+  def mux(I,S):
+    Ishape = I.get_shape().as_list()
+    Sshape = S.get_shape().as_list()
+    assert len(Ishape) == 3
+    assert Ishape[1] == K
+    assert Ishape[2] == 2**N
+    assert len(Sshape) == 2
+    assert Sshape[0] == K
+    assert Sshape[1] == N
+
     S0 = tf.expand_dims(tf.maximum(0.0,1-tf.abs(S+1)/2.0),2)
     S1 = tf.expand_dims(tf.maximum(0.0,1-tf.abs(S-1)/2.0),2)
     out = I
     for n in reversed(range(N)):
       mid = 2**n
-      out = out[:,0:mid]*S0[:,n] + out[:,mid:]*S1[:,n]
-    return out[:,0]
+      out = out[:,:,0:mid]*S0[:,n] + out[:,:,mid:]*S1[:,n]
+    return tf.out[:,:,0]
   return mux
 
-def MuxMixed(N):
-  def bits(n):
-    bstr = bitstr(n,N)
-    return [int(digit) for digit in bstr]
-  def mux(I,S):
-    #I and S are now both 2 dimensions
-    I,S = check_mux_inputs(I,S,N)
-    S0 = tf.expand_dims(tf.maximum(0.0,1-tf.abs(S+1)/2.0),2)
-    S1 = tf.expand_dims(tf.maximum(0.0,1-tf.abs(S-1)/2.0),2)
-    out = I
-    for n in reversed(range(N)):
-      mid = 2**n
-      out = out[:,0:mid]*S0[:,n] + out[:,mid:]*S1[:,n]
-    return out[:,0]
-  return mux
 
-def LutN(N,kind="gaussian",sigma=1):
+def LutN(N,K,kind="gaussian",sigma=1):
   def lut(x,W=None):
     if W is not None:
-      assert W.get_shape().as_list()[0] == 2**N
+      Wshape = W.get_shape().as_list()
+      assert len(Wshape) == 2
+      assert Wshape[0] == K
+      assert Wshape[1] == 2**N
       pass
     else:
-      W = Var(2**N)
-    if type(x) is list:
-      x = tf.stack(x,axis=1)
-    out = Mux(N,kind,sigma)(W,x)
+      W = Var([K,2**N])
+    out = MuxSTriangle(N,K)(W,x)
     return out,W
   return lut
+
+
+
+#works best if:
+#(K1*N)%K0==0
+#out = LutLayer(x)
+#in.shape = [-1,K0]
+#out.shape = [-1,K1]
+def LutLayer(N,K0,K1):
+  def layer(x):
+    xshape = x.get_shape().as_list();
+    assert len(xshape) == 2
+    assert xshape[1] == K0
+    
+    mulfac = N*K1/K0
+    if mulfac > 1:
+      x = tf.tile(x,[1,mulfac])
+    print x
+    #Adjust input to a multiple of K1xN
+    kmod = (K1*N)%K0
+    if kmod != 0:
+      x = tf.concat([x,x[:,0:kmod]],axis=1)
+    assert x.get_shape().as_list()[1]==K1*N
+    x = tf.reshape(x,[-1,K1,N])
+    out, Ws = LutN(N,K1)(x)
+    return out, Ws
+  return layer
+
+
+#This is a sequence of LutLayers
+#out = f(in)
+#in.shape = [-1,Ls[0]]
+#out.shape = [-1,Ls[-1]]
+def MacroLutLayer(N,Ls):
+  def layer(x):
+    K0,K1 = Ls[0],Ls[-1]
+    L = len(Ls)-1
+    #This is the min number of layers needed in order to have the outputs depend on every input
+    assert L >= math.ceil(log(N)(K0))
+    
+    Ws = [None for i in range(L)]
+    l = x
+    for i in range(L):
+      print "A", l, Ls[i], Ls[i+1]
+      l, Ws[i] = LutLayer(N,Ls[i],Ls[i+1])(l)
+    return l, Ws
+  return layer
 
 
 def SelectN(N,kind="gaussian",sigma=1):

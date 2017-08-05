@@ -30,7 +30,7 @@ if __name__ == '__main__':
   c0 = tf.fill(tf.shape(X[:,0]),-1.0)
   kind="gaussian"
   #kind="triangle"
-  lut4 = LutN(4,kind)
+  lut4 = LutN(4,1,kind)
   Ws = [None for i in range(13)]
   
   l00,Ws[0] = lut4([X[:,0],X[:,3],X[:,6],c0])
