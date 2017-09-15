@@ -1,6 +1,8 @@
 import numpy as np
 from common import *
 
+from PIL import Image
+
 import tensorflow.examples.tutorials.mnist as mnist 
 
 class Data:
@@ -148,12 +150,19 @@ class Binopdata(Dataset):
   def test(self):
     return self.test_data
 
+
+
 class Mnistdata(Dataset):
-  def __init__(self,ds=1):
-    assert 28%ds==0
-    self.ds = ds
+  def __init__(self,image_width=28,bit_depth=1,map_0_to_n1=True):
+    # TODO: figure out what to do with bit_depth and map_0_to_n1
+    assert bit_depth == 1
+    assert map_0_to_n1 
+    assert image_width<=28
+    self.image_width = image_width
+    self.bit_depth = bit_depth
+    self.map_0_to_n1 = map_0_to_n1
     self.data =  mnist.input_data.read_data_sets('MNIST_data',one_hot=True)
-    train_images = (self.data.train.images >0.5).astype(int)
+    train_images = (self.data.train.images > 0.5).astype(int)
     train_labels = (self.data.train.labels > 0.5).astype(int)
     test_images = (self.data.test.images > 0.5).astype(int)
     test_labels = (self.data.test.labels > 0.5).astype(int)
@@ -170,7 +179,16 @@ class Mnistdata(Dataset):
       return [self.downsample(X[0]),X[1]]
     if len(X.shape)==2:
       X = self.reshape(X)
-    return X[:,::self.ds,::self.ds].reshape(X.shape[0],(28//self.ds)**2)
+
+    W = self.image_width
+
+    newX = np.zeros((len(X), W, W), dtype=np.float)
+    for i in range(len(X)):
+      orig_im = Image.fromarray(X[i],'F')
+      new_im = orig_im.resize((W,W), Image.LANCZOS)
+      newX[i] = np.asarray(new_im)
+      #new_im.save("temp.tiff", "TIFF")
+    return newX.reshape(newX.shape[0],W*W)
 
   def next_data(self,k):
     data = self.data.train.next_batch(k)
@@ -180,7 +198,7 @@ class Mnistdata(Dataset):
     return data
 
   @property
-  def test(self,ds=1):
+  def test(self):
     return [self.downsample(scaleto11((self.test_data.inputs > 0.5).astype(int))),scaleto11((self.test_data.outputs >0.5).astype(int))]
 
 

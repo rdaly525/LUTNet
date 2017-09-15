@@ -8,13 +8,15 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
 
-  data = datasets.Mnistdata(ds=2)
+  image_width = 12
+
+  data = datasets.Mnistdata(image_width=image_width)
   sigma = 1
   N = 4
   lr = 0.1
   rw = 0.01
-  Xbits = 14*14
-  layers = [196,100,50,25,15,10]
+  Xbits = image_width**2
+  layers = [Xbits,100,50,25,15,10]
   ybits = 10
   
 
@@ -59,6 +61,7 @@ if __name__ == '__main__':
         losses[i//sample] = lossval
     print("Accuracy!")
     print(accuracy.eval(feed_dict={X:data.test[0],y_:data.test[1]}))
+
   plt.figure(1)
   plt.plot(losses)
   plt.xlabel("iter/"+str(sample))
