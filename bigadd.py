@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 import tensorflow as tf
 
@@ -21,9 +22,9 @@ if __name__ == '__main__':
   def add(a,b):
     return a+b
 
-  data = datasets.Binopdata(add,Xbits/2,ybits)
+  data = datasets.Binopdata(add,Xbits//2,ybits)
   test_data = data.test
-  print test_data.inputs[6], test_data.outputs[6]
+  print(test_data.inputs[6], test_data.outputs[6])
   data.next_data(6)
   X = tf.placeholder(tf.float32, shape=[None,Xbits])
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
@@ -54,9 +55,9 @@ if __name__ == '__main__':
   Wphs = [tf.placeholder(tf.float32,shape=[2**N]) for i in range(13)]
   W_assigns = [tf.assign(Ws[i],Wphs[i]) for i in range(13)]
 
-  print type(Ws[0]), "HERE"
+  print(type(Ws[0]), "HERE")
   y = tf.stack([l00,l20,l11,l21,l30,l40,l41],axis=1)
-  print "Total Luts =", len(Ws)
+  print("Total Luts =", len(Ws))
   loss = tf.nn.l2_loss(y-y_) + rw*binary_reg(Ws)
   train_step = tf.train.GradientDescentOptimizer(lr).minimize(loss)
   
@@ -69,7 +70,7 @@ if __name__ == '__main__':
 
   sample = 20
   iters = 300
-  losses = np.zeros(iters/sample)
+  losses = np.zeros(iters//sample)
   with tf.Session() as sess:
     tf.global_variables_initializer().run()
     wval = None
@@ -77,29 +78,29 @@ if __name__ == '__main__':
       tdata = data.next_data(32)
       _,yval,lossval = sess.run([train_step,y,loss],feed_dict={X:tdata[0],y_:tdata[1]})
       if (i%sample==0):
-        print lossval, "("+str(i)+"/"+str(iters)+")"
-        #print "  ",scaleto01(tdata[0][0]),"=",scaleto01(tdata[1][0])
-        #print "  lrn",yval[0]
-        losses[i/sample] = lossval
-        print "  acc",accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs})
+        print(lossval, "("+str(i)+"/"+str(iters)+")")
+        #print("  ",scaleto01(tdata[0][0]),"=",scaleto01(tdata[1][0])
+        #print("  lrn",yval[0]
+        losses[i//sample] = lossval
+        print("  acc",accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs}))
       if (i%(sample*4)==39):
         curWs = sess.run(Ws,feed_dict={X:test_data.inputs,y_:test_data.outputs})
-        print "CURWs", curWs
-    print "Accuracy!"
-    print accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs})
+        print("CURWs", curWs)
+    print("Accuracy!")
+    print(accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs}))
     #yv, yv_, cor = sess.run([y,y_,correct_pred],feed_dict={X:test_data.inputs,y_:test_data.outputs})
     
     curWs = sess.run(Ws,feed_dict={X:test_data.inputs,y_:test_data.outputs})
     fd = make_feed_dict(Wphs,curWs)
-    print "FD",fd
+    print("FD",fd)
     sess.run(W_assigns,feed_dict=fd)
     curWs = sess.run(Ws,feed_dict={X:test_data.inputs,y_:test_data.outputs})
-    print "newWs", curWs
-    print "Accuracy2!"
-    print accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs})
+    print("newWs", curWs)
+    print("Accuracy2!")
+    print(accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs}))
     tdata = data.next_data(2)
     yval,lossval = sess.run([y,loss],feed_dict={X:tdata[0],y_:tdata[1]})
-    print lossval, yval
+    print(lossval, yval)
   
   plt.figure(1)
   plt.plot(losses)

@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 import tensorflow as tf
 
@@ -37,9 +38,9 @@ if __name__ == '__main__':
   #    cnt += ((a>>i)&1) + ((b>>i)&1)
   #  return cnt
 
-  data = datasets.Binopdata(add,Xbits/2,ybits)
+  data = datasets.Binopdata(add,Xbits//2,ybits)
   test_data = data.test
-  print test_data.inputs[6], test_data.outputs[6]
+  print(test_data.inputs[6], test_data.outputs[6])
   data.next_data(6)
   X = tf.placeholder(tf.float32, shape=[None,Xbits])
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
@@ -75,13 +76,13 @@ if __name__ == '__main__':
   sample = 20
   iters = 200
   qit = 10
-  losses = np.zeros(iters*qit/sample)
+  losses = np.zeros(iters*qit//sample)
   with tf.Session() as sess:
     tf.global_variables_initializer().run()
     wval = None
     for q in range(qit):
       if (q < 5):
-        print "Quantizing", q
+        print("Quantizing", q)
         curWs = sess.run(Ws)
         fd = make_feed_dict(Wphs,curWs,0.9)
         sess.run(W_assigns,feed_dict=fd)
@@ -92,23 +93,23 @@ if __name__ == '__main__':
         else:
           _,yval,lossval = sess.run([train_step_2,y,loss],feed_dict={X:tdata[0],y_:tdata[1]})
         if ((iters*q+i)%sample==0):
-          print lossval, "("+str(i)+"/"+str(iters)+")"
-          print "  ",scaleto01(tdata[0][0][0:bits]),"+",scaleto01(tdata[0][0][bits:]),"=",scaleto01(tdata[1][0])
-          print "  lrn",scaleto01(yval[0],False)
-          print "  ac", accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs})
-          losses[(iters*q+i)/sample] = lossval
+          print(lossval, "("+str(i)+"/"+str(iters)+")")
+          print("  ",scaleto01(tdata[0][0][0:bits]),"+",scaleto01(tdata[0][0][bits:]),"=",scaleto01(tdata[1][0]))
+          print("  lrn",scaleto01(yval[0],False))
+          print("  ac", accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs}))
+          losses[(iters*q+i)//sample] = lossval
       #q = q/3
-    print "Quantizing Last"
+    print("Quantizing Last")
     curWs = sess.run(Ws)
     fd = make_feed_dict(Wphs,curWs,0,1)
     sess.run(W_assigns,feed_dict=fd)
 
-    print "Accuracy!"
-    print accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs})
-    print "sw0",sess.run(flatten_list(selWs0))
-    print "sw1",sess.run(flatten_list(selWs1))
-    print "lw0",sess.run(lutWs0)
-    print "lw1",sess.run(lutWs1)
+    print("Accuracy!")
+    print(accuracy.eval(feed_dict={X:test_data.inputs,y_:test_data.outputs}))
+    print("sw0",sess.run(flatten_list(selWs0)))
+    print("sw1",sess.run(flatten_list(selWs1)))
+    print("lw0",sess.run(lutWs0))
+    print("lw1",sess.run(lutWs1))
   
   plt.figure(1)
   plt.plot(losses)
