@@ -162,10 +162,10 @@ class Mnistdata(Dataset):
     self.bit_depth = bit_depth
     self.map_0_to_n1 = map_0_to_n1
     self.data =  mnist.input_data.read_data_sets('MNIST_data',one_hot=True)
-    train_images = (self.data.train.images > 0.5).astype(int)
-    train_labels = (self.data.train.labels > 0.5).astype(int)
-    test_images = (self.data.test.images > 0.5).astype(int)
-    test_labels = (self.data.test.labels > 0.5).astype(int)
+    train_images = self.data.train.images
+    train_labels = self.data.train.labels
+    test_images = self.data.test.images
+    test_labels = self.data.test.labels
     Dataset.__init__(self,Data(train_images,train_labels),Data(test_images,test_labels))
 
   #assume [?,784]
@@ -199,7 +199,11 @@ class Mnistdata(Dataset):
 
   @property
   def test(self):
-    return [self.downsample(scaleto11((self.test_data.inputs > 0.5).astype(int))),scaleto11((self.test_data.outputs >0.5).astype(int))]
+    return [scaleto11(( self.downsample(self.test_data.inputs) > 0.5).astype(int)),scaleto11((self.test_data.outputs >0.5).astype(int))]
+  
+  @property
+  def train(self):
+    return [scaleto11(( self.downsample(self.train_data.inputs) > 0.5).astype(int)),scaleto11((self.train_data.outputs >0.5).astype(int))]
 
 
 
