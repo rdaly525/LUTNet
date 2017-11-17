@@ -11,8 +11,10 @@ def Var(k):
 #Does not take lists!
 def Mux(N,kind,sigma=1):
   if kind=="gaussian":
+    assert(0)
     return MuxGaussian(N,sigma)
   if kind=="triangle":
+    assert(0)
     return MuxTriangle(N)
   assert(0)
 
@@ -105,7 +107,7 @@ def MuxITriangle(N,K):
   return mux
 
 
-def LutN(N,K,kind="gaussian",sigma=1):
+def LutN(N,K,kind="triangle",sigma=1):
   def lut(x,W=None):
     if W is not None:
       Wshape = W.get_shape().as_list()

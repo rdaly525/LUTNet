@@ -23,17 +23,21 @@ Try to do AOT (Ahead of Time) compilation for the Muxes. This should ideally mak
 Also try out new function for MUX where instead of a gaussian or a triangle do a half gaussian/half triangle (triangle on the inside to be consistent with Linear Interpelation 
 
 
-First real test:
-16x16x4 -> 30
 
-Macro and micro layers
+Questions:
+LUTs have N inputs. How do I do a reduction from K (>N) to 1. Basically what connections should I choose?
+What shoudl the LUT function be?
+  "triangle" LERP
+  "gaussian"
+  ??
+SHould there be an additional nonlinearity on the output of the LUTs?
+How should I encode the inputs? Should I treat the bits as channels? Should I treat MSbs more important than LSBs?
+How should I encode outputs? single bit per class is not enough information.
+  Mutliple its per class, but how to design an architecture
+How should I do the Loss? currently just doing L2
 
-Macro Layers do an Mk -> Mk+1
-Macro layers should be such that every output bit is a function of ALL input bits
 
-Micro Layer N->M
-
-
+How to encode these functions with GPU performance in mind? (I am not doing normal convolutions anymore)
 
 
 

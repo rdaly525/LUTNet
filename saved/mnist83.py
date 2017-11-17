@@ -41,7 +41,7 @@ if __name__ == '__main__':
   accuracy = tf.reduce_mean(correct_pred)
 
   sample = 20
-  iters = 10000
+  iters = 20000
   batch = 32
   losses = np.zeros(iters//sample)
   with tf.Session() as sess:
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     for i in range(iters):
       tdata = data.next_data(batch)
       yval,lossval = None,None
-      if (i < 5000):
+      if (i < 10000):
         _,yval,lossval = sess.run([train_step,y,loss],feed_dict={X:tdata[0],y_:tdata[1]})
       else:
         _,yval,lossval = sess.run([train_step,y,loss],feed_dict={X:tdata[0],y_:tdata[1]})
