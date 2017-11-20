@@ -76,9 +76,9 @@ def MuxSTriangle(N,K):
     out = tf.expand_dims(I,0)
     for n in reversed(range(N)):
       mid = 2**n
-      print( "N", mid, out)
+      #print( "N", mid, out)
       out = out[:,:,0:mid]*S0[:,:,n:n+1] + out[:,:,mid:]*S1[:,:,n:n+1]
-      print( out)
+      #print( out)
     return out[:,:,0]
   return mux
 
