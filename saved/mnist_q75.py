@@ -18,8 +18,8 @@ if __name__ == '__main__':
   rw = 0.00001
   Xbits = image_width**2
   ybits = 10
-  obits = 8
-  layers = [Xbits,350,300,250,200,160,120,100,ybits*obits]
+  obits = 6
+  layers = [Xbits,300,225,150,100,ybits*obits]
   #layers = [Xbits,150,100,75,50,30,30,20,20,15,15,10]
   
   qiter = 20
@@ -30,8 +30,8 @@ if __name__ == '__main__':
   y, Ws = MacroLutLayer(N,layers)(X)
   print (y)
   scale = np.ones([1,1,obits])
-  #scale[0][0] = np.array([1,1,1,1,1,1])
-  y = tf.reshape(y,[-1,10,obits]) #* scale
+  scale[0][0] = np.array([1,1,1,1,1,1])
+  y = tf.reshape(y,[-1,10,obits]) * scale
   print (y)
   y = tf.reduce_sum(y,2)
   print (y)
@@ -48,7 +48,7 @@ if __name__ == '__main__':
   W_assigns = [tf.assign(Ws[i],Wphs[i]) for i in range(len(Ws))]
 
   loss_pre = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y))
-  losses = [loss_pre + rw*binary_reg(Ws)*(1.389**i) for i in range(qiter)]
+  losses = [loss_pre + rw*binary_reg(Ws)*(1.7**i) for i in range(qiter)]
   train_steps = [tf.train.AdamOptimizer(lr).minimize(losses[i]) for i in range(qiter)]
   #loss1 = loss_pre + 3*rw*binary_reg(Ws)
   #train_step = tf.train.AdamOptimizer(lr).minimize(loss)

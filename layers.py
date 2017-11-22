@@ -5,6 +5,9 @@ import sys
 
 from common import *
 
+def broadcast(tensor,shape):
+  return tensor + tf.zeros(shape,dtype=tensor.dtype)
+
 def Var(k):
   return tf.Variable(tf.random_normal(k,mean=0,stddev=0.5))
 

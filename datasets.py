@@ -35,11 +35,15 @@ class Seldata(Dataset):
   def sel(self,x):
     return int(bitstr(x,self.K)[self.selval])
   
-  def next_data(self,k):
+  def next_data(self,k, to11=True):
     X,y = np.zeros((k,self.K)), np.zeros((k))
     for i in range(k):
       ri = np.random.randint(0,2**self.K)
-      X[i], y[i] = bitfield(ri,self.K), scaleto11(self.sel(ri))
+      if (to11):
+        X[i], y[i] = bitfield(ri,self.K), scaleto11(self.sel(ri))
+      else:
+        X[i], y[i] = bitfield(ri,self.K), self.sel(ri)
+
     return [X,y]
       
     
@@ -54,7 +58,7 @@ class Seldata(Dataset):
       
 
   @property
-  def test(self):
+  def test(self, to11=True):
     return self.test_data
 
 class Lutdata(Dataset):
@@ -197,13 +201,20 @@ class Mnistdata(Dataset):
     data[1] = scaleto11((data[1] > 0.5).astype(int))
     return data
 
-  @property
-  def test(self):
-    return [scaleto11(( self.downsample(self.test_data.inputs) > 0.5).astype(int)),scaleto11((self.test_data.outputs >0.5).astype(int))]
+  #@property
+  def test(self,to11=True):
+    if (to11):
+      return [scaleto11(( self.downsample(self.test_data.inputs) > 0.5).astype(int)),scaleto11((self.test_data.outputs >0.5).astype(int))]
+    else:
+      return [scaleto11(( self.downsample(self.test_data.inputs) > 0.5).astype(int)),(self.test_data.outputs >0.5).astype(int)]
   
-  @property
-  def train(self):
-    return [scaleto11(( self.downsample(self.train_data.inputs) > 0.5).astype(int)),scaleto11((self.train_data.outputs >0.5).astype(int))]
+  #@property
+  def train(self, to11=True):
+    if (to11):
+      return [scaleto11(( self.downsample(self.train_data.inputs) > 0.5).astype(int)),scaleto11((self.train_data.outputs >0.5).astype(int))]
+    else:
+      return [scaleto11(( self.downsample(self.train_data.inputs) > 0.5).astype(int)),(self.train_data.outputs >0.5).astype(int)]
+      
 
 
 

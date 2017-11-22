@@ -1,6 +1,16 @@
 import numpy as np
 import math
 
+
+def histogram(Ws):
+  print (len(Ws))
+  hist = np.array([])
+  for W in Ws:
+    W_flatten = W.flatten()
+    hist = np.append(hist,W.flatten())
+  print (hist.shape)
+  return hist
+
 def log(b):
   def f(x):
     return math.log(x)/math.log(b)
@@ -11,7 +21,7 @@ def flatten_list(l):
 
 #phs=placeholders
 #curs=current values
-def make_feed_dict(phs, curs,thresh=0,prob=1):
+def make_feed_dict(phs, curs,thresh=0,keep=False,prob=1):
   assert len(phs) == len(curs)
   def quant(x):
     if (x >=thresh and np.random.uniform() < prob):
@@ -19,7 +29,10 @@ def make_feed_dict(phs, curs,thresh=0,prob=1):
     elif (x < -thresh and np.random.uniform() < prob):
       return -1
     else:
-      return np.random.normal(0,0.5)
+      if keep:
+        return x
+      else:
+        return np.random.normal(0,0.25)
   quant = np.vectorize(quant,otypes=[np.float])
   news = [quant(cur) for cur in curs]
   feed_dict = {}
