@@ -11,18 +11,16 @@ if __name__ == '__main__':
   image_width = 20
 
   data = datasets.Mnistdata(image_width=image_width)
-  print (data.train(False)[0].shape)
   print (data.test(False)[1][5])
   sigma = 1
   N = 4
-  lr = 0.003
+  lr = 0.01
   rw = 0.00001
   Xbits = image_width**2
   ybits = 10
-  obits = 8
-  #layers = [Xbits,350,300,250,200,160,120,100,ybits*obits]
-  layers = create_layers(Xbits,ybits*obits,12)
-  print (layers)
+  obits = 6
+  layers = [Xbits,300,225,150,100,ybits*obits]
+  #layers = [Xbits,150,100,75,50,30,30,20,20,15,15,10]
   
   qiter = 20
 
@@ -32,8 +30,8 @@ if __name__ == '__main__':
   y, Ws = MacroLutLayer(N,layers)(X)
   print (y)
   scale = np.ones([1,1,obits])
-  #scale[0][0] = np.array([1,1,1,1,1,1])
-  y = tf.reshape(y,[-1,10,obits]) #* scale
+  scale[0][0] = np.array([1,1,1,1,1,1])
+  y = tf.reshape(y,[-1,10,obits]) * scale
   print (y)
   y = tf.reduce_sum(y,2)
   print (y)
@@ -50,10 +48,8 @@ if __name__ == '__main__':
   W_assigns = [tf.assign(Ws[i],Wphs[i]) for i in range(len(Ws))]
 
   loss_pre = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y))
-  losses = [loss_pre + rw*(100**(i/qiter))*binary_reg(Ws) for i in range(qiter)]
-
+  losses = [loss_pre + rw*binary_l1_reg(Ws)*(1.0**i) for i in range(qiter)]
   train_steps = [tf.train.AdamOptimizer(lr).minimize(losses[i]) for i in range(qiter)]
-  #train_steps = [tf.train.MomentumOptimizer(lr,.5).minimize(losses[i]) for i in range(qiter)]
   #loss1 = loss_pre + 3*rw*binary_reg(Ws)
   #train_step = tf.train.AdamOptimizer(lr).minimize(loss)
   #train_step1 = tf.train.AdamOptimizer(lr).minimize(loss1)
@@ -71,9 +67,11 @@ if __name__ == '__main__':
   
   correct_pred = tf.cast(tf.reduce_all(tf.equal(yscale,y_scale),1),tf.float32)
   accuracy = tf.reduce_mean(correct_pred)
+  #
+
 
   sample = 20
-  iters = 1720 #About 1 epoch
+  iters = 1000
   batch = 32
   losslog = np.zeros((iters*qiter)//sample)
   hist = None
@@ -118,7 +116,10 @@ if __name__ == '__main__':
       #plt.hist(hist,bins=100)
       #plt.show() 
       print("curW5",curWs[2])
-      fd = make_feed_dict(Wphs,curWs,1.0 - j/(qiter-1),True)
+      if (j>qiter/4):
+        fd = make_feed_dict(Wphs,curWs)
+      else:
+        fd = make_feed_dict(Wphs,curWs,0.95,True)
       #print("FD",fd)
       sess.run(W_assigns,feed_dict=fd)
       tdata = data.next_data(batch)

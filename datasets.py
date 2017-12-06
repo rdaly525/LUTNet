@@ -166,6 +166,7 @@ class Mnistdata(Dataset):
     self.bit_depth = bit_depth
     self.map_0_to_n1 = map_0_to_n1
     self.data =  mnist.input_data.read_data_sets('MNIST_data',one_hot=True)
+    print(self.data.train.labels.shape)
     train_images = self.data.train.images
     train_labels = self.data.train.labels
     test_images = self.data.test.images

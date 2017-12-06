@@ -281,6 +281,16 @@ def binary_reg(W):
     ws.append(tf.reduce_sum(wm1*wm1*wp1*wp1))
   return tf.add_n(ws)
 
+def binary_l1_reg(W):
+  if not type(W) is list:
+    W = [W]
+  ws = []
+  for w in W:
+    ws.append(tf.reduce_sum(tf.abs(1-tf.abs(w))))
+  return tf.add_n(ws)
+
+
+
 def randConnection(inW,outW):
   minNum = int(4*outW//inW)
   assert minNum > 0

@@ -11,7 +11,6 @@ if __name__ == '__main__':
   image_width = 20
 
   data = datasets.Mnistdata(image_width=image_width)
-  print (data.train(False)[0].shape)
   print (data.test(False)[1][5])
   sigma = 1
   N = 4
@@ -21,21 +20,31 @@ if __name__ == '__main__':
   ybits = 10
   obits = 8
   #layers = [Xbits,350,300,250,200,160,120,100,ybits*obits]
-  layers = create_layers(Xbits,ybits*obits,12)
-  print (layers)
+  layers = [Xbits,350,300,250,200,160]
+  out_layers = [160,100,75,50,30,20,15,10,8]
+  #layers = [Xbits,150,100,75,50,30,30,20,20,15,15,10]
   
-  qiter = 20
+  qiter = 16
 
   X = tf.placeholder(tf.float32, shape=[None,Xbits])
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
   
-  y, Ws = MacroLutLayer(N,layers)(X)
-  print (y)
-  scale = np.ones([1,1,obits])
+  pre_split, Ws = MacroLutLayer(N,layers)(X)
+  #sp_layers = [None for _ in range(ybits)]
+  sp_ys = [None for _ in range(ybits)]
+  for i in range(ybits):
+    sp_out, W = MacroLutLayer(N,out_layers)(pre_split)
+    Ws.extend(W)
+    sp_ys[i] = tf.reduce_sum(sp_out,1)
+    print (sp_out, sp_ys[i])
+  
+  y = tf.stack(sp_ys,axis=1)
+
+  #scale = np.ones([1,1,obits])
   #scale[0][0] = np.array([1,1,1,1,1,1])
-  y = tf.reshape(y,[-1,10,obits]) #* scale
-  print (y)
-  y = tf.reduce_sum(y,2)
+  #y = tf.reshape(y,[-1,10,obits]) #* scale
+  #print (y)
+  #y = tf.reduce_sum(y,2)
   print (y)
 
   totLuts = 0
@@ -50,8 +59,7 @@ if __name__ == '__main__':
   W_assigns = [tf.assign(Ws[i],Wphs[i]) for i in range(len(Ws))]
 
   loss_pre = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y))
-  losses = [loss_pre + rw*(100**(i/qiter))*binary_reg(Ws) for i in range(qiter)]
-
+  losses = [loss_pre + rw*binary_reg(Ws)*(1.389**i) for i in range(qiter)]
   train_steps = [tf.train.AdamOptimizer(lr).minimize(losses[i]) for i in range(qiter)]
   #train_steps = [tf.train.MomentumOptimizer(lr,.5).minimize(losses[i]) for i in range(qiter)]
   #loss1 = loss_pre + 3*rw*binary_reg(Ws)
@@ -71,9 +79,11 @@ if __name__ == '__main__':
   
   correct_pred = tf.cast(tf.reduce_all(tf.equal(yscale,y_scale),1),tf.float32)
   accuracy = tf.reduce_mean(correct_pred)
+  #
+
 
   sample = 20
-  iters = 1720 #About 1 epoch
+  iters = 1000
   batch = 32
   losslog = np.zeros((iters*qiter)//sample)
   hist = None
@@ -118,7 +128,10 @@ if __name__ == '__main__':
       #plt.hist(hist,bins=100)
       #plt.show() 
       print("curW5",curWs[2])
-      fd = make_feed_dict(Wphs,curWs,1.0 - j/(qiter-1),True)
+      if (j==qiter-1):
+        fd = make_feed_dict(Wphs,curWs)
+      else:
+        fd = make_feed_dict(Wphs,curWs,0.95,True)
       #print("FD",fd)
       sess.run(W_assigns,feed_dict=fd)
       tdata = data.next_data(batch)
