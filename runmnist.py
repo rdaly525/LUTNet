@@ -8,20 +8,25 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
 
-  image_width = 20
+  hyp = dict(
+    image_width = 20,
+    learning_rate = 0.003,
+    reg_weight = 0.00001,
+    output_bits = 8,
+    layer_count = 12,
+  )
 
-  data = datasets.Mnistdata(image_width=image_width)
+  output_bits = hyp['output_bits']
+
+  data = datasets.Mnistdata(image_width=hyp['image_width'])
   print (data.train(False)[0].shape)
   print (data.test(False)[1][5])
-  sigma = 1
-  N = 4
-  lr = 0.003
-  rw = 0.00001
-  Xbits = image_width**2
+   
+  Xbits = hyp['image_width']**2
+ 
+  lut_bits = 4
   ybits = 10
-  obits = 8
-  #layers = [Xbits,350,300,250,200,160,120,100,ybits*obits]
-  layers = create_layers(Xbits,ybits*obits,12)
+  layers = create_layers(Xbits,ybits*output_bits,hyp['layer_count'])
   print (layers)
   
   qiter = 20
@@ -29,11 +34,11 @@ if __name__ == '__main__':
   X = tf.placeholder(tf.float32, shape=[None,Xbits])
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
   
-  y, Ws = MacroLutLayer(N,layers)(X)
+  y, Ws = MacroLutLayer(lut_bits,layers)(X)
   print (y)
-  scale = np.ones([1,1,obits])
+  scale = np.ones([1,1,output_bits])
   #scale[0][0] = np.array([1,1,1,1,1,1])
-  y = tf.reshape(y,[-1,10,obits]) #* scale
+  y = tf.reshape(y,[-1,10,output_bits]) #* scale
   print (y)
   y = tf.reduce_sum(y,2)
   print (y)
@@ -44,20 +49,20 @@ if __name__ == '__main__':
     print(w)
     shape = w.get_shape().as_list()
     totLuts += shape[0]*shape[1]
-  print("Total Luts", totLuts//2**N)
+  print("Total Luts", totLuts//2**lut_bits)
 
   Wphs = [tf.placeholder(tf.float32,shape=w.shape) for w in Ws]
   W_assigns = [tf.assign(Ws[i],Wphs[i]) for i in range(len(Ws))]
 
   loss_pre = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y))
-  losses = [loss_pre + rw*(100**(i/qiter))*binary_reg(Ws) for i in range(qiter)]
+  losses = [loss_pre + hyp['reg_weight']*(100**(i/qiter))*binary_reg(Ws) for i in range(qiter)]
 
-  train_steps = [tf.train.AdamOptimizer(lr).minimize(losses[i]) for i in range(qiter)]
-  #train_steps = [tf.train.MomentumOptimizer(lr,.5).minimize(losses[i]) for i in range(qiter)]
-  #loss1 = loss_pre + 3*rw*binary_reg(Ws)
-  #train_step = tf.train.AdamOptimizer(lr).minimize(loss)
-  #train_step1 = tf.train.AdamOptimizer(lr).minimize(loss1)
-  #train_step2 = tf.train.AdamOptimizer(lr//10).minimize(loss)
+  train_steps = [tf.train.AdamOptimizer(hyp['learning_rate']).minimize(losses[i]) for i in range(qiter)]
+  #train_steps = [tf.train.MomentumOptimizer(learning_rate,.5).minimize(losses[i]) for i in range(qiter)]
+  #loss1 = loss_pre + 3*hyp['reg_weight']*binary_reg(Ws)
+  #train_step = tf.train.AdamOptimizer(hyp['learning_rate']).minimize(loss)
+  #train_step1 = tf.train.AdamOptimizer(hyp['learning_rate']).minimize(loss1)
+  #train_step2 = tf.train.AdamOptimizer(hyp['learning_rate']//10).minimize(loss)
 
   ymax = tf.reduce_max(y,axis=1)
   ymax = tf.reshape(ymax,[-1,1])
@@ -77,6 +82,8 @@ if __name__ == '__main__':
   batch = 32
   losslog = np.zeros((iters*qiter)//sample)
   hist = None
+  nq_accuracy = np.zeros(qiter)
+  uq_accuracy = np.zeros(qiter)
   with tf.Session() as sess:
     tf.global_variables_initializer().run()
     
@@ -108,7 +115,8 @@ if __name__ == '__main__':
           #print("ac",ac_val)
           losslog[(i+j*iters)//sample] = lossval
       print(j, "Accuracy_test")
-      print(accuracy.eval(feed_dict={X:data.test(False)[0],y_:data.test(False)[1]}))
+      uq_accuracy[j] = accuracy.eval(feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
+      print(uq_accuracy[j])
       #print(j, "Accuracy_train")
       #print(accuracy.eval(feed_dict={X:data.train(False)[0],y_:data.train(False)[1]}))
 
@@ -131,7 +139,8 @@ if __name__ == '__main__':
       #plt.show() 
 
       print(j, "Accuracy_test_q")
-      print(accuracy.eval(feed_dict={X:data.test(False)[0],y_:data.test(False)[1]}))
+      q_accuracy[j] = accuracy.eval(feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
+      print(q_accuracy)
       #print(j, "Accuracy_train_q")
       #print(accuracy.eval(feed_dict={X:data.train(False)[0],y_:data.train(False)[1]}))
 
@@ -143,3 +152,9 @@ if __name__ == '__main__':
   plt.figure(2)
   plt.hist(hist,bins=100)
   plt.show()
+  plt.figure(3)
+  plt.plot(q_accuracy)
+  plt.plot(uq_accuracy)
+  plt.legend(['unquantized', 'quantized'], loc='upper left')
+  plt.xlabel("qiter")
+  plt.ylabel("accuracy")
