@@ -1,6 +1,8 @@
 import numpy as np
 import math
 
+
+
 def create_layers(first,last,steps):
   r = (last/first)**(1/steps)
   return [int(first*(r**i) + 0.5) for i in range(steps+1)]

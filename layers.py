@@ -289,6 +289,21 @@ def binary_l1_reg(W):
     ws.append(tf.reduce_sum(tf.abs(1-tf.abs(w))))
   return tf.add_n(ws)
 
+def binary_l1_reg_outer(W):
+  if not type(W) is list:
+    W = [W]
+  ws = []
+  for w in W:
+    ws.append(tf.reduce_sum(tf.maximum(0.0,tf.abs(w)-1)))
+  return tf.add_n(ws)
+
+def binary_l1_reg_inner(W):
+  if not type(W) is list:
+    W = [W]
+  ws = []
+  for w in W:
+    ws.append(tf.reduce_sum(tf.maximum(0.0,1-tf.abs(w))))
+  return tf.add_n(ws)
 
 
 def randConnection(inW,outW):
