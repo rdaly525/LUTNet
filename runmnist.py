@@ -10,14 +10,21 @@ if __name__ == '__main__':
 
   hyp = dict(
     image_width = 28,
-    learning_rate = 0.003,
+    learning_rate = 0.01,
     reg_weight_inner = 0.00001,
-    reg_weight_outer = 0.1,
-    output_bits = 10,
-    layer_count = 12,
+    reg_weight_outer = 1.0,
+    output_bits = 8,
+    layer_count = 6,
+    qiter = 20,
+    iters = 300,
+    batch = 32,
   )
 
+  sample = 50 # How many linear iterations in between printing
+
+  #extract commmonly used hyperparameters to nicer var names
   output_bits = hyp['output_bits']
+  iters,qiter,batch = hyp['iters'],hyp['qiter'],hyp['batch']
 
   data = datasets.Mnistdata(image_width=hyp['image_width'])
   print (data.train(False)[0].shape)
@@ -29,8 +36,6 @@ if __name__ == '__main__':
   ybits = 10
   layers = create_layers(Xbits,ybits*output_bits,hyp['layer_count'])
   print (layers)
-  
-  qiter = 8
 
   X = tf.placeholder(tf.float32, shape=[None,Xbits])
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
@@ -38,7 +43,7 @@ if __name__ == '__main__':
   y, Ws = MacroLutLayer(lut_bits,layers)(X)
   print (y)
   scale = np.ones([1,1,output_bits])
-  #scale[0][0] = np.array([1,1,1,1,1,1])
+  scale[0][0] = np.array([1,1,1,1,1,1,1,1])
   y = tf.reshape(y,[-1,10,output_bits]) #* scale
   print (y)
   y = tf.reduce_sum(y,2)
@@ -56,14 +61,8 @@ if __name__ == '__main__':
   W_assigns = [tf.assign(Ws[i],Wphs[i]) for i in range(len(Ws))]
 
   loss_pre = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y))
-  losses = [loss_pre + hyp['reg_weight_outer']*binary_l1_reg_outer(Ws) + hyp['reg_weight_inner']*(100**(i/qiter))*binary_l1_reg_inner(Ws) for i in range(qiter)]
-
+  losses = [loss_pre + binary_l1_reg2(Ws,hyp['reg_weight_inner'],hyp['reg_weight_outer']) for i in range(qiter)]
   train_steps = [tf.train.AdamOptimizer(hyp['learning_rate']).minimize(losses[i]) for i in range(qiter)]
-  #train_steps = [tf.train.MomentumOptimizer(learning_rate,.5).minimize(losses[i]) for i in range(qiter)]
-  #loss1 = loss_pre + 3*hyp['reg_weight_inner']*binary_reg(Ws)
-  #train_step = tf.train.AdamOptimizer(hyp['learning_rate']).minimize(loss)
-  #train_step1 = tf.train.AdamOptimizer(hyp['learning_rate']).minimize(loss1)
-  #train_step2 = tf.train.AdamOptimizer(hyp['learning_rate']//10).minimize(loss)
 
   ymax = tf.reduce_max(y,axis=1)
   ymax = tf.reshape(ymax,[-1,1])
@@ -78,9 +77,6 @@ if __name__ == '__main__':
   correct_pred = tf.cast(tf.reduce_all(tf.equal(yscale,y_scale),1),tf.float32)
   accuracy = tf.reduce_mean(correct_pred)
 
-  sample = 20
-  iters = 1720 #About 1 epoch
-  batch = 32
   losslog = np.zeros((iters*qiter)//sample)
   hist = None
   q_accuracy = np.zeros(qiter)
@@ -94,15 +90,9 @@ if __name__ == '__main__':
         tdata1 = scaleto01(tdata[1])
         yval,lossval = None,None
         y1,y2 = None,None
-        #if (j < qiter//2):
-          #print(tdata1)
+
         _,yval,lossval,y1,y2,acc = sess.run([train_steps[j],y,losses[j],yscale, y_scale,accuracy],feed_dict={X:tdata[0],y_:tdata1})
-          #print("1",y1)
-          #print("2",y2)
-          #print("3",y3)
-          #print("4",y4)
-        #else:
-          #_,yval,lossval,y1,y2,acc = sess.run([train_step1,y,loss1,yscale, y_scale,accuracy],feed_dict={X:tdata[0],y_:tdata1})
+
         if (i%sample==0):
           print(lossval, j, "("+str(i)+"/"+str(iters)+")")
           print("  cor",scaleto01(tdata[1][0]))
@@ -110,42 +100,32 @@ if __name__ == '__main__':
           print("  ysca",y1[0])
           print("  y_sca",y2[0])
           print("  acc",acc)
-          #print("ys",ys_val)
-          #print("y_s",y_s_val)
-          #print("pred",pred_val)
-          #print("ac",ac_val)
           losslog[(i+j*iters)//sample] = lossval
       print(j, "Accuracy_test")
       uq_accuracy[j] = accuracy.eval(feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
       print(uq_accuracy[j])
       print(uq_accuracy)
-      #print(j, "Accuracy_train")
-      #print(accuracy.eval(feed_dict={X:data.train(False)[0],y_:data.train(False)[1]}))
+
 
       curWs = sess.run(Ws,feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
       hist = histogram(curWs)
-      #plt.figure()
-      #plt.hist(hist,bins=100)
-      #plt.show() 
+
       print("curW5",curWs[2])
-      fd = make_feed_dict(Wphs,curWs,1.0 - j/(qiter-1),True)
-      #print("FD",fd)
+      if (j>(3*qiter/4)): # TODO: move to hyperparameters
+        fd = make_feed_dict(Wphs,curWs)
+      else:
+        #TODO: save temporary with quantization
+        fd = make_feed_dict(Wphs,curWs,0.95,True)
+
       sess.run(W_assigns,feed_dict=fd)
       tdata = data.next_data(batch)
       curWs = sess.run(Ws,feed_dict={X:tdata[0],y_:tdata[1]})
       print("newW5", curWs[2])
       
-      #hist = histogram(curWs)
-      #plt.figure()
-      #plt.hist(hist,bins=100)
-      #plt.show() 
-
       print(j, "Accuracy_test_q")
       q_accuracy[j] = accuracy.eval(feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
       print(q_accuracy[j])
       print(q_accuracy)
-      #print(j, "Accuracy_train_q")
-      #print(accuracy.eval(feed_dict={X:data.train(False)[0],y_:data.train(False)[1]}))
 
   plt.figure(1)
   plt.plot(losslog)
