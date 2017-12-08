@@ -16,12 +16,13 @@ The Formula that I have also works for compositional Muxes (surprisingly!)
 
 so Mux4(X00,X01,X10,X11, Sel0,Sel1) == Mux2(Mux2(X00,X01,Sel0),Mux2(X10,X11,Sel0),Sel1)
 
-Formulat for Mux2(X0,X1,S) = (1+exp(-2/sigma))^(-1) * (X0*exp(-(S+1)^2 /(2*sigma)) + X1*exp(-(S-1)^2 /(2*sigma)))
+Formula for Mux2(X0,X1,S) = (1+exp(-2/sigma))^(-1) * (X0*exp(-(S+1)^2 /(2*sigma)) + X1*exp(-(S-1)^2 /(2*sigma)))
 
 Try to do AOT (Ahead of Time) compilation for the Muxes. This should ideally make it faster to compile (and maybe to run)
 
 Also try out new function for MUX where instead of a gaussian or a triangle do a half gaussian/half triangle (triangle on the inside to be consistent with Linear Interpelation 
 
+Consider using a [hyperparameter search library](http://sheffieldml.github.io/GPyOpt/)
 
 
 Questions:
@@ -30,7 +31,7 @@ What shoudl the LUT function be?
   "triangle" LERP
   "gaussian"
   ??
-SHould there be an additional nonlinearity on the output of the LUTs?
+Should there be an additional nonlinearity on the output of the LUTs?
 How should I encode the inputs? Should I treat the bits as channels? Should I treat MSbs more important than LSBs?
 How should I encode outputs? single bit per class is not enough information.
   Mutliple its per class, but how to design an architecture
