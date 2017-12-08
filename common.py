@@ -15,6 +15,12 @@ def histogram(Ws):
   print (hist.shape)
   return hist
 
+def histLut(Ws):
+  hist = np.array([])
+  for W in Ws:
+    Wquant = (W>0)*1
+    
+
 def log(b):
   def f(x):
     return math.log(x)/math.log(b)
