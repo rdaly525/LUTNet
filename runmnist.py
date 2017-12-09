@@ -7,7 +7,7 @@ from layers import *
 import matplotlib.pyplot as plt
 
 
-def run_mnist(hyp,display_graphs = True):
+def run_mnist(hyp,display_graphs = False):
   assert hyp['quant_scheme']=="partial_then_full", "Only 'partial_then_full' quantization implemented atm"
   sample = 50 # How many linear iterations in between printing
 
@@ -31,8 +31,8 @@ def run_mnist(hyp,display_graphs = True):
   
   y, Ws = MacroLutLayer(lut_bits,layers)(X)
   print (y)
-  scale = np.ones([1,1,output_bits])
-  scale[0][0] = np.array([1,1,1,1,1,1,1,1])
+  #scale = np.ones([1,1,output_bits])
+  #scale[0][0] = np.array([1,1,1,1,1,1,1,1])
   y = tf.reshape(y,[-1,10,output_bits]) #* scale
   print (y)
   y = tf.reduce_sum(y,2)
@@ -66,7 +66,7 @@ def run_mnist(hyp,display_graphs = True):
   correct_pred = tf.cast(tf.reduce_all(tf.equal(yscale,y_scale),1),tf.float32)
   accuracy = tf.reduce_mean(correct_pred)
 
-  losslog = np.zeros((iters*qiter)//sample)
+  losslog = np.zeros(((iters*qiter)//sample) + 1)
   hist = None
   q_accuracy = np.zeros(qiter)
   uq_accuracy = np.zeros(qiter)
@@ -100,13 +100,21 @@ def run_mnist(hyp,display_graphs = True):
 
       print("curW5",curWs[2])
 
-      fd = make_feed_dict(W_quantized,curWs,0.95,True)
+      fd = make_feed_dict(W_quantized,curWs,hyp['partial_quant_threshold'],True)
       full_quant_fd = make_feed_dict(W_quantized,curWs)
       
       sess.run(W_assigns,feed_dict=full_quant_fd)
       q_accuracy[j] = accuracy.eval(feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
       print(j, "Accuracy_test_q")
       print(q_accuracy[j])
+      if j == 5 and hyp['early_out'] and q_accuracy[j] < 0.2:
+        print("We don't seem to be learning :(   Earlying out to save time.")
+        return max(q_accuracy),losslog,hist,uq_accuracy,q_accuracy
+
+      if j >= 5 and (max(q_accuracy) == q_accuracy[-5]):
+        print("We don't seem to be learning :(   Earlying out to save time.")
+        return max(q_accuracy),losslog,hist,uq_accuracy,q_accuracy
+
       if not (j>int(hyp['quant_iter_threshold']*qiter)):
         sess.run(W_assigns,feed_dict=fd)
 
@@ -127,7 +135,7 @@ def run_mnist(hyp,display_graphs = True):
     plt.xlabel("qiter")
     plt.ylabel("accuracy")
     plt.show()
-  return max(q_accuracy)
+  return max(q_accuracy),losslog,hist,uq_accuracy,q_accuracy
 
 
 if __name__ == '__main__':
@@ -143,8 +151,11 @@ if __name__ == '__main__':
     iters = 300,
     batch = 32,
     quant_scheme = "partial_then_full",
-    quant_iter_threshold = 0.75 # switchover 75% of the way through
+    quant_iter_threshold = 0.75, # switchover 75% of the way through
+    early_out = True,
+    partial_quant_threshold = 0.95
   )
-  run_mnist(hyp,True)
+  a = run_mnist(hyp,True)
+  print(a)
 
   
