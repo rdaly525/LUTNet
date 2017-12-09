@@ -1,6 +1,7 @@
 import runmnist as rmn
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials,space_eval
 from math import log
+import pickle
 
 
 def objective(args):
@@ -60,3 +61,6 @@ best = fmin(objective,
 
 print(-best)
 print(space_eval(space, best))
+
+with open('hyperopt_mnist.pickle', 'wb') as handle:
+    pickle.dump(trials, handle, protocol=pickle.HIGHEST_PROTOCOL)
