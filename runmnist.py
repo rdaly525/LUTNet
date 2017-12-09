@@ -6,20 +6,9 @@ import datasets
 from layers import *
 import matplotlib.pyplot as plt
 
-if __name__ == '__main__':
 
-  hyp = dict(
-    image_width = 28,
-    learning_rate = 0.01,
-    reg_weight_inner = 0.00001,
-    reg_weight_outer = 1.0,
-    output_bits = 8,
-    layer_count = 6,
-    qiter = 20,
-    iters = 300,
-    batch = 32,
-  )
-
+def run_mnist(hyp,display_graphs = True):
+  assert hyp['quant_scheme']=="partial_then_full", "Only 'partial_then_full' quantization implemented atm"
   sample = 50 # How many linear iterations in between printing
 
   #extract commmonly used hyperparameters to nicer var names
@@ -57,8 +46,8 @@ if __name__ == '__main__':
     totLuts += shape[0]*shape[1]
   print("Total Luts", totLuts//2**lut_bits)
 
-  Wphs = [tf.placeholder(tf.float32,shape=w.shape) for w in Ws]
-  W_assigns = [tf.assign(Ws[i],Wphs[i]) for i in range(len(Ws))]
+  W_quantized = [tf.placeholder(tf.float32,shape=w.shape) for w in Ws]
+  W_assigns = [tf.assign(Ws[i],W_quantized[i]) for i in range(len(Ws))]
 
   loss_pre = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y))
   losses = [loss_pre + binary_l1_reg2(Ws,hyp['reg_weight_inner'],hyp['reg_weight_outer']) for i in range(qiter)]
@@ -104,41 +93,58 @@ if __name__ == '__main__':
       print(j, "Accuracy_test")
       uq_accuracy[j] = accuracy.eval(feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
       print(uq_accuracy[j])
-      print(uq_accuracy)
 
 
       curWs = sess.run(Ws,feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
       hist = histogram(curWs)
 
       print("curW5",curWs[2])
-      if (j>(3*qiter/4)): # TODO: move to hyperparameters
-        fd = make_feed_dict(Wphs,curWs)
-      else:
-        #TODO: save temporary with quantization
-        fd = make_feed_dict(Wphs,curWs,0.95,True)
 
-      sess.run(W_assigns,feed_dict=fd)
-      tdata = data.next_data(batch)
-      curWs = sess.run(Ws,feed_dict={X:tdata[0],y_:tdata[1]})
-      print("newW5", curWs[2])
+      fd = make_feed_dict(W_quantized,curWs,0.95,True)
+      full_quant_fd = make_feed_dict(W_quantized,curWs)
       
-      print(j, "Accuracy_test_q")
+      sess.run(W_assigns,feed_dict=full_quant_fd)
       q_accuracy[j] = accuracy.eval(feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
+      print(j, "Accuracy_test_q")
       print(q_accuracy[j])
-      print(q_accuracy)
+      if not (j>int(hyp['quant_iter_threshold']*qiter)):
+        sess.run(W_assigns,feed_dict=fd)
 
-  plt.figure(1)
-  plt.plot(losslog)
-  plt.xlabel("iter/"+str(sample))
-  plt.ylabel("loss")
-  plt.show()
-  plt.figure(2)
-  plt.hist(hist,bins=100)
-  plt.show()
-  plt.figure(3)
-  plt.plot(uq_accuracy)
-  plt.plot(q_accuracy)
-  plt.legend(['unquantized', 'quantized'], loc='upper left')
-  plt.xlabel("qiter")
-  plt.ylabel("accuracy")
-  plt.show()
+  print("Maximum quantized accuracy: " + str(max(q_accuracy)) + ", final: " + str(q_accuracy[-1]))
+  if display_graphs:
+    plt.figure(1)
+    plt.plot(losslog)
+    plt.xlabel("iter/"+str(sample))
+    plt.ylabel("loss")
+    plt.show()
+    plt.figure(2)
+    plt.hist(hist,bins=100)
+    plt.show()
+    plt.figure(3)
+    plt.plot(uq_accuracy)
+    plt.plot(q_accuracy)
+    plt.legend(['unquantized', 'quantized'], loc='upper left')
+    plt.xlabel("qiter")
+    plt.ylabel("accuracy")
+    plt.show()
+  return max(q_accuracy)
+
+
+if __name__ == '__main__':
+
+  hyp = dict(
+    image_width = 28,
+    learning_rate = 0.01,
+    reg_weight_inner = 0.00001,
+    reg_weight_outer = 1.0,
+    output_bits = 8,
+    layer_count = 6,
+    qiter = 20,
+    iters = 300,
+    batch = 32,
+    quant_scheme = "partial_then_full",
+    quant_iter_threshold = 0.75 # switchover 75% of the way through
+  )
+  run_mnist(hyp,True)
+
+  
