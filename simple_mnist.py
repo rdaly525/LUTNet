@@ -28,10 +28,9 @@ def run_mnist():
   accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
   tdata = data.next_data(1)
-  temp = []
   for i in range(28):
-    temp.append(tdata[0][0][i*28:(i+1)*28])
-  print(temp)
+    print(tdata[0][0][i*28:(i+1)*28])
+
   print(scaleto01(tdata[1]))
 
   with tf.Session() as sess:
