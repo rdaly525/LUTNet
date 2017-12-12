@@ -6,10 +6,10 @@ ROOT = template
 all: $(ROOT).pdf
 
 $(ROOT).pdf: $(SRCS)
-	$(LATEX) $(ROOT)
-	$(BIBTEX) $(ROOT)
-	$(LATEX) $(ROOT)
-	$(LATEX) $(ROOT)
+	-$(LATEX) $(ROOT)
+	-$(BIBTEX) $(ROOT)
+	-$(LATEX) $(ROOT)
+	-$(LATEX) $(ROOT)
 
 # TAGS: $(SRCS)
 # 	etags $^
