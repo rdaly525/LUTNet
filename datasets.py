@@ -165,12 +165,11 @@ class Mnistdata(Dataset):
     self.image_width = image_width
     self.bit_depth = bit_depth
     self.map_0_to_n1 = map_0_to_n1
-    self.data =  mnist.input_data.read_data_sets('MNIST_data',one_hot=True)
-    print(self.data.train.labels.shape)
-    train_images = self.data.train.images
-    train_labels = self.data.train.labels
-    test_images = self.data.test.images
-    test_labels = self.data.test.labels
+    data = mnist.input_data.read_data_sets('MNIST_data',one_hot=True)
+    train_images = data.train.images
+    train_labels = data.train.labels
+    test_images = data.test.images
+    test_labels = data.test.labels
     Dataset.__init__(self,Data(train_images,train_labels),Data(test_images,test_labels))
 
   #assume [?,784]

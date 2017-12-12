@@ -1,0 +1,134 @@
+\documentclass{article}
+
+% if you need to pass options to natbib, use, e.g.:
+% \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading nips_2017
+%
+% to avoid loading the natbib package, add option nonatbib:
+% \usepackage[nonatbib]{nips_2017}
+
+%\usepackage{nips_2017}
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+\usepackage[final]{nips_2017}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+%\usepackage{enumitem}
+
+\title{Hardware-Software Co-Design for DNNs on FPGAs}
+
+% The \author macro works with any number of authors. There are two
+% commands used to separate the names and addresses of multiple
+% authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to
+% break the lines. Using \AND forces a line break at that point. So,
+% if LaTeX puts 3 of 4 authors names on the first line, and the last
+% on the second line, try using \AND instead of \And before the third
+% author name.
+
+\author{
+  Ross Daly\\
+  Department of Computer Science\\
+  Stanford University\\
+  \texttt{rdaly525@stanford.edu} \\
+  %% examples of more authors
+  %% \And
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+  %% \AND
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+  %% \And
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+  %% \And
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+}
+
+\begin{document}
+% \nipsfinalcopy is no longer used
+
+\maketitle
+
+\section{Introduction}
+Deep learning enables massive breakthroughs in many areas of applied computer science at the cost of consuming large amounts computing resources. Trillions of joules are used up every day to train and execute thousands of novel architectures, and industry is seeking every opportunity to improve performance and lower energy cost. Due to the predictable end of Moore’s law like Dennard scaling before it, Deep learning hardware accelerators are of particular interest. Since state of the art research changes at a rapid pace reconfigurability is an important aspect of designing accelerators. Existing software abstractions will need to augmented or reconsidered in order to leverage new hardware accelerators and existing reconfigurable architectures like FPGAs. Oculus could definitely benefit from very low power neural net accelerators. 
+
+\section{Motivation}
+FPGAs are a compelling target for accelerating Deep Neural Nets (DNNs) due to their reconfigurability and their potential to be more energy efficient than GPUs. Mapping DNNs to FPGAs is an open research problem. DNNs contain a variety of computation such as convolutional, fully connected, nonlinearities (ReLU/Tanh), normalization (batch norm/layer norm), down-sampling (max pooling/strided convolutions), etc. These layers are typically trained and run using floating point operations. Since floating point operations are expensive in both area and power, a large set of work has been done on quantizing floating point operators into computationally simpler and lower power fixed point operations while still maintaining DNN accuracy. There has also been some work on taking this to the extreme and doing 1-bit operations (XNOR-net).
+
+While this strategy of quantization broaches the problem of software-hardware co-design for FPGAs, it does not take into account the actual FPGA primitives which the neural nets will be run on. Running any of these operations requires some mapping from the floating point/fixed point operators to the fundamental computational blocks of the FPGA. The computational parts of FPGAs are the configurable Look Up Tables (LUTs) which are plentiful, and Fixed Function blocks which are limited in kind and quantity. 
+This abstraction away from LUTs leads to inefficient mapping of tensor operations which will manifest in the amount of LUTs being underutilized as well as each LUT itself being underutilized. 
+
+\section{Approach}
+We can construct an architecture-aware algorithm by taking into account the LUT-based computation. Concretely I propose reformulating the deep learning optimization problem as learning the FGPA configuration directly rather than learning weights and inefficiently mapping down to LUTs. This approach can be used to either replace certain layers in neural nets, or as an end-to-end replacement. 
+
+This is a challenging problem due to the numerous different types of configuration state (LUT values, mux configuration, register initialization, memories, connection network, etc) which makes it a large discrete optimization problem.
+
+We can make this unwieldy problem tractable by doing the following. First, constrain the problem to be a static architecture of LUTs (called a LUTNet). This reduces the learnable configuration state to only the values of the LUTs. Second, relax this discrete problem to transform it into a continuous one which allows me to leverage typical machine learning optimization techniques such as SGD. I can then use quantization techniques to transform the problem back to discrete. In the last section, I address some thoughts on removing the static architecture constraint.
+
+\section{Results}
+I have implemented a proof-of-concept of this approach in Tensorflow. Early results are that I can train and achieve around 94\% accuracy for MNIST using a static architecture of ~1500 4-bit LUTs. This would fit on even the smallest FPGA. For comparison, inference on a simple softmax model requires ~8000 multiply-adds, and achieves ~92\% accuracy using floating point computation. Since a 4-bit LUT is a good deal smaller than even an 8-bit multiply or add, this represents orders of magnitude savings in computation and power. Preliminary experiments also suggest that there is a Pareto curve trading off accuracy and number of LUTs. I plan on performing thorough experiments to get more explicit performance and power numbers.
+
+Even though these LUTNets are different from DNNs, they have similar properties. I do not have to completely throw out the deep learning literature in order to construct and train these networks. We can construct LUTNet layers that are analogous to conventional fully connected, convolution, and downsample neural network layers. In fact the proof-of-concept architecture is based on analogy with a simple two-layer fully-connected network.
+
+\section{Proposal}
+In this project I would like to explore some or all of the following;
+\begin{itemize}
+\item Scaling this approach to larger datasets like CIFAR or ImageNet.
+\item Use a LUTNet for a real application like learning parts of a low-power
+\item Simultaneous Localization and Mapping (SLAM) pipeline.
+\item Taking a portion of existing state-of-the-art architectures like MobileNet and replace it with a LUTNet.
+\item Expanding the LUT architecture to include FPGA fixed function blocks like dedicated adders and multipliers. 
+\item Reproducing and decreasing area of existing quantized networks like XNOR-net by framing them as LUTs and Fixed-functions
+\item Exploring methods for formulating LUT connections as learnable. This allows for more extensive architectures and could be useful for normal deep learning methods. 
+\item Reintegrate state (registers and memories) into these LUT architectures for more complicated computations. 
+\end{itemize}
+
+
+\section*{References}
+
+\medskip
+
+
+
+%\bibliographystyle{abbrv-doi-narrow}
+%\bibliographystyle{abbrv-doi-hyperref}
+%\bibliographystyle{abbrv-doi-hyperref-narrow}
+
+\bibliography{template}{}
+\bibliographystyle{abbrv-doi}
+
+%\small
+%
+%[1] Alexander, J.A.\ \& Mozer, M.C.\ (1995) Template-based algorithms
+%for connectionist rule extraction. In G.\ Tesauro, D.S.\ Touretzky and
+%T.K.\ Leen (eds.), {\it Advances in Neural Information Processing
+%  Systems 7}, pp.\ 609--616. Cambridge, MA: MIT Press.
+%
+%[2] Bower, J.M.\ \& Beeman, D.\ (1995) {\it The Book of GENESIS:
+%  Exploring Realistic Neural Models with the GEneral NEural SImulation
+%  System.}  New York: TELOS/Springer--Verlag.
+%
+%[3] Hasselmo, M.E., Schnell, E.\ \& Barkai, E.\ (1995) Dynamics of
+%learning and recall at excitatory recurrent synapses and cholinergic
+%modulation in rat hippocampal region CA3. {\it Journal of
+%  Neuroscience} {\bf 15}(7):5249-5262.
+
+\end{document}
