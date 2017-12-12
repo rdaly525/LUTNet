@@ -71,7 +71,7 @@
 Deep learning enables massive breakthroughs in many areas of applied computer science at the cost of consuming large amounts computing resources. Trillions of joules are used up every day to train and execute thousands of novel architectures, and industry is seeking every opportunity to improve performance and lower energy cost. Due to the predictable end of Moore’s law like Dennard scaling before it, Deep learning hardware accelerators are of particular interest. Since state of the art research changes at a rapid pace reconfigurability is an important aspect of designing accelerators. Existing software abstractions will need to augmented or reconsidered in order to leverage new hardware accelerators and existing reconfigurable architectures like FPGAs. Oculus could definitely benefit from very low power neural net accelerators. 
 
 \section{Motivation}
-FPGAs are a compelling target for accelerating Deep Neural Nets (DNNs) due to their reconfigurability and their potential to be more energy efficient than GPUs. Mapping DNNs to FPGAs is an open research problem. DNNs contain a variety of computation such as convolutional, fully connected, nonlinearities (ReLU/Tanh), normalization (batch norm/layer norm), down-sampling (max pooling/strided convolutions), etc. These layers are typically trained and run using floating point operations. Since floating point operations are expensive in both area and power, a large set of work has been done on quantizing floating point operators into computationally simpler and lower power fixed point operations while still maintaining DNN accuracy. There has also been some work on taking this to the extreme and doing 1-bit operations (XNOR-net).
+FPGAs are a compelling target for accelerating Deep Neural Nets (DNNs) due to their reconfigurability and their potential to be more energy efficient than GPUs. Mapping DNNs to FPGAs is an open research problem. DNNs contain a variety of computation such as convolutional, fully connected, nonlinearities (ReLU/Tanh), normalization (batch norm/layer norm), down-sampling (max pooling/strided convolutions), etc. These layers are typically trained and run using floating point operations. Since floating point operations are expensive in both area and power, a large set of work has been done on quantizing floating point operators into computationally simpler and lower power fixed point operations while still maintaining DNN accuracy. There has also been some work on taking this to the extreme and doing 1-bit operations (\cite{rastegari2016xnor}).
 
 While this strategy of quantization broaches the problem of software-hardware co-design for FPGAs, it does not take into account the actual FPGA primitives which the neural nets will be run on. Running any of these operations requires some mapping from the floating point/fixed point operators to the fundamental computational blocks of the FPGA. The computational parts of FPGAs are the configurable Look Up Tables (LUTs) which are plentiful, and Fixed Function blocks which are limited in kind and quantity. 
 This abstraction away from LUTs leads to inefficient mapping of tensor operations which will manifest in the amount of LUTs being underutilized as well as each LUT itself being underutilized. 
@@ -112,8 +112,8 @@ In this project I would like to explore some or all of the following;
 %\bibliographystyle{abbrv-doi-hyperref}
 %\bibliographystyle{abbrv-doi-hyperref-narrow}
 
-\bibliography{template}{}
 \bibliographystyle{abbrv-doi}
+\bibliography{template}
 
 %\small
 %
