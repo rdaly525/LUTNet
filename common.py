@@ -17,11 +17,37 @@ def histogram(Ws):
   print (hist.shape)
   return hist
 
+
+def depbits(val):
+  bits = [0 for i in range(4)]
+  bits[0] = 0b0101010101010101
+  bits[1] = 0b0011001100110011
+  bits[2] = 0b0000111100001111
+  bits[3] = 0b0000000011111111
+  
+  tot = sum([ (val&(bits[i])) != ((val& (~(bits[i])))>>2**i) for i in range(4)])
+  return tot
+
 def histLut(Ws):
-  hist = np.array([])
+  hist = np.zeros(2**16)
+  mult = [2**i for i in range(16)]
   for W in Ws:
-    Wquant = (W>0)*1
-    
+    bW = W > 0
+    for i in range(W.shape[0]):
+      idx = sum(bW[i]*mult)
+      hist[idx] = hist[idx] + 1
+  return hist
+
+def histLutDeps(Ws):
+  hist = np.zeros(5)
+  mult = [2**i for i in range(16)]
+  for W in Ws:
+    bW = W > 0
+    for i in range(W.shape[0]):
+      idx = sum(bW[i]*mult)
+      numbits = depbits(idx)
+      hist[numbits] = hist[numbits] + 1
+  return hist
 
 def log(b):
   def f(x):

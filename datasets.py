@@ -19,6 +19,67 @@ class Dataset:
     self.train_data = train
     self.test_data = test
 
+class Mnistdata(Dataset):
+  def __init__(self,image_width=28,bit_depth=1,map_0_to_n1=True):
+    # TODO: figure out what to do with bit_depth and map_0_to_n1
+    assert bit_depth == 1
+    assert map_0_to_n1 
+    assert image_width<=28
+    self.image_width = image_width
+    self.bit_depth = bit_depth
+    self.map_0_to_n1 = map_0_to_n1
+    data = mnist.input_data.read_data_sets('MNIST_data',one_hot=True)
+    train_images = data.train.images
+    train_labels = data.train.labels
+    test_images = data.test.images
+    test_labels = data.test.labels
+    Dataset.__init__(self,Data(train_images,train_labels),Data(test_images,test_labels))
+
+  #assume [?,784]
+  def reshape(self,X):
+    bsize = X.shape[0]
+    assert X.shape[1] == 28**2
+    return np.reshape(X,(bsize,28,28))
+
+  def downsample(self,X):
+    if type(X) is tuple or type(X) is list:
+      return [self.downsample(X[0]),X[1]]
+    if len(X.shape)==2:
+      X = self.reshape(X)
+
+    W = self.image_width
+
+    newX = np.zeros((len(X), W, W), dtype=np.float)
+    for i in range(len(X)):
+      orig_im = Image.fromarray(X[i],'F')
+      new_im = orig_im.resize((W,W), Image.LANCZOS)
+      newX[i] = np.asarray(new_im)
+      #new_im.save("temp.tiff", "TIFF")
+    return newX.reshape(newX.shape[0],W*W)
+
+  def next_data(self,k):
+    data = self.data.train.next_batch(k)
+    data = self.downsample(data)
+    data[0] = scaleto11((data[0] > 0.5).astype(int))
+    data[1] = scaleto11((data[1] > 0.5).astype(int))
+    return data
+
+  #@property
+  def test(self,to11=True):
+    if (to11):
+      return [scaleto11(( self.downsample(self.test_data.inputs) > 0.5).astype(int)),scaleto11((self.test_data.outputs >0.5).astype(int))]
+    else:
+      return [scaleto11(( self.downsample(self.test_data.inputs) > 0.5).astype(int)),(self.test_data.outputs >0.5).astype(int)]
+  
+  #@property
+  def train(self, to11=True):
+    if (to11):
+      return [scaleto11(( self.downsample(self.train_data.inputs) > 0.5).astype(int)),scaleto11((self.train_data.outputs >0.5).astype(int))]
+    else:
+      return [scaleto11(( self.downsample(self.train_data.inputs) > 0.5).astype(int)),(self.train_data.outputs >0.5).astype(int)]
+ 
+
+
 #K is number of mux inputs
 class Seldata(Dataset):
   def __init__(self,K,selval):
@@ -155,66 +216,7 @@ class Binopdata(Dataset):
     return self.test_data
 
 
-
-class Mnistdata(Dataset):
-  def __init__(self,image_width=28,bit_depth=1,map_0_to_n1=True):
-    # TODO: figure out what to do with bit_depth and map_0_to_n1
-    assert bit_depth == 1
-    assert map_0_to_n1 
-    assert image_width<=28
-    self.image_width = image_width
-    self.bit_depth = bit_depth
-    self.map_0_to_n1 = map_0_to_n1
-    data = mnist.input_data.read_data_sets('MNIST_data',one_hot=True)
-    train_images = data.train.images
-    train_labels = data.train.labels
-    test_images = data.test.images
-    test_labels = data.test.labels
-    Dataset.__init__(self,Data(train_images,train_labels),Data(test_images,test_labels))
-
-  #assume [?,784]
-  def reshape(self,X):
-    bsize = X.shape[0]
-    assert X.shape[1] == 28**2
-    return np.reshape(X,(bsize,28,28))
-
-  def downsample(self,X):
-    if type(X) is tuple or type(X) is list:
-      return [self.downsample(X[0]),X[1]]
-    if len(X.shape)==2:
-      X = self.reshape(X)
-
-    W = self.image_width
-
-    newX = np.zeros((len(X), W, W), dtype=np.float)
-    for i in range(len(X)):
-      orig_im = Image.fromarray(X[i],'F')
-      new_im = orig_im.resize((W,W), Image.LANCZOS)
-      newX[i] = np.asarray(new_im)
-      #new_im.save("temp.tiff", "TIFF")
-    return newX.reshape(newX.shape[0],W*W)
-
-  def next_data(self,k):
-    data = self.data.train.next_batch(k)
-    data = self.downsample(data)
-    data[0] = scaleto11((data[0] > 0.5).astype(int))
-    data[1] = scaleto11((data[1] > 0.5).astype(int))
-    return data
-
-  #@property
-  def test(self,to11=True):
-    if (to11):
-      return [scaleto11(( self.downsample(self.test_data.inputs) > 0.5).astype(int)),scaleto11((self.test_data.outputs >0.5).astype(int))]
-    else:
-      return [scaleto11(( self.downsample(self.test_data.inputs) > 0.5).astype(int)),(self.test_data.outputs >0.5).astype(int)]
-  
-  #@property
-  def train(self, to11=True):
-    if (to11):
-      return [scaleto11(( self.downsample(self.train_data.inputs) > 0.5).astype(int)),scaleto11((self.train_data.outputs >0.5).astype(int))]
-    else:
-      return [scaleto11(( self.downsample(self.train_data.inputs) > 0.5).astype(int)),(self.train_data.outputs >0.5).astype(int)]
-      
+     
 
 
 
