@@ -68,6 +68,8 @@ def run_mnist(hyp,display_graphs = False):
 
   losslog = np.zeros(((iters*qiter)//sample) + 1)
   hist = None
+  luthists = None
+  luthistdeps = None
   q_accuracy = np.zeros(qiter)
   uq_accuracy = np.zeros(qiter)
   with tf.Session() as sess:
@@ -104,6 +106,9 @@ def run_mnist(hyp,display_graphs = False):
       full_quant_fd = make_feed_dict(W_quantized,curWs)
       
       sess.run(W_assigns,feed_dict=full_quant_fd)
+      QWs = sess.run(Ws,feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
+      luthists = histLut(QWs)
+      luthistdeps = histLutDeps(QWs)
       q_accuracy[j] = accuracy.eval(feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
       print(j, "Accuracy_test_q")
       print(q_accuracy[j])
@@ -125,10 +130,16 @@ def run_mnist(hyp,display_graphs = False):
     plt.xlabel("iter/"+str(sample))
     plt.ylabel("loss")
     plt.show()
-    plt.figure(2)
+    #plt.figure(2)
+    #plt.plot(luthists)
+    plt.figure(3)
+    print(luthistdeps)
+    plt.plot(luthistdeps)
+    plt.show()
+    plt.figure(4)
     plt.hist(hist,bins=100)
     plt.show()
-    plt.figure(3)
+    plt.figure(5)
     plt.plot(uq_accuracy)
     plt.plot(q_accuracy)
     plt.legend(['unquantized', 'quantized'], loc='upper left')
@@ -139,15 +150,14 @@ def run_mnist(hyp,display_graphs = False):
 
 
 if __name__ == '__main__':
-
   hyp = dict(
-    image_width = 28,
+    image_width = 20,
     learning_rate = 0.01,
     reg_weight_inner = 0.00001,
     reg_weight_outer = 1.0,
-    output_bits = 8,
-    layer_count = 6,
-    qiter = 20,
+    output_bits = 2,
+    layer_count = 5,
+    qiter = 3,
     iters = 300,
     batch = 32,
     quant_scheme = "partial_then_full",
@@ -155,7 +165,8 @@ if __name__ == '__main__':
     early_out = True,
     partial_quant_threshold = 0.95
   )
-  a = run_mnist(hyp,True)
+  #a = run_mnist(hyp,True)
+  a = run_mnist({'image_width': 28, 'learning_rate': 0.013671298649718656, 'reg_weight_inner': 1.3161390636688435e-10, 'reg_weight_outer': 0.20233250452973095, 'output_bits': 8, 'layer_count': 5, 'qiter': 5, 'iters': 750, 'batch': 48, 'quant_scheme': 'partial_then_full', 'quant_iter_threshold': 0.9, 'early_out': True, 'partial_quant_threshold': 0.9341594717634678},True)
   print(a)
 
   
