@@ -16,8 +16,8 @@ def run_mnist(hyp,display_graphs = False):
   iters,qiter,batch = hyp['iters'],hyp['qiter'],hyp['batch']
 
   data = datasets.Mnistdata(image_width=hyp['image_width'])
-  print (data.train(False)[0].shape)
-  print (data.test(False)[1][5])
+  tdata = data.next_data(1)
+  print (tdata)
    
   Xbits = hyp['image_width']**2
  
@@ -78,26 +78,25 @@ def run_mnist(hyp,display_graphs = False):
     for j in range(qiter):
       for i in range(iters):
         tdata = data.next_data(batch)
-        tdata1 = scaleto01(tdata[1])
         yval,lossval = None,None
         y1,y2 = None,None
 
-        _,yval,lossval,y1,y2,acc = sess.run([train_steps[j],y,losses[j],yscale, y_scale,accuracy],feed_dict={X:tdata[0],y_:tdata1})
+        _,yval,lossval,y1,y2,acc = sess.run([train_steps[j],y,losses[j],yscale, y_scale,accuracy],feed_dict={X:tdata[0],y_:tdata[1]})
 
         if (i%sample==0):
           print(lossval, j, "("+str(i)+"/"+str(iters)+")")
-          print("  cor",scaleto01(tdata[1][0]))
+          print("  cor",tdata[1][0])
           print("  lrn",(yval[0]))
           print("  ysca",y1[0])
           print("  y_sca",y2[0])
           print("  acc",acc)
           losslog[(i+j*iters)//sample] = lossval
       print(j, "Accuracy_test")
-      uq_accuracy[j] = accuracy.eval(feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
+      uq_accuracy[j] = accuracy.eval(feed_dict={X:data.test[0],y_:data.test[1]})
       print(uq_accuracy[j])
 
 
-      curWs = sess.run(Ws,feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
+      curWs = sess.run(Ws,feed_dict={X:data.test[0],y_:data.test[1]})
       hist = histogram(curWs)
 
       print("curW5",curWs[2])
@@ -106,10 +105,10 @@ def run_mnist(hyp,display_graphs = False):
       full_quant_fd = make_feed_dict(W_quantized,curWs)
       
       sess.run(W_assigns,feed_dict=full_quant_fd)
-      QWs = sess.run(Ws,feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
+      QWs = sess.run(Ws,feed_dict={X:data.test[0],y_:data.test[1]})
       luthists = histLut(QWs)
       luthistdeps = histLutDeps(QWs)
-      q_accuracy[j] = accuracy.eval(feed_dict={X:data.test(False)[0],y_:data.test(False)[1]})
+      q_accuracy[j] = accuracy.eval(feed_dict={X:data.test[0],y_:data.test[1]})
       print(j, "Accuracy_test_q")
       print(q_accuracy[j])
       if j == 5 and hyp['early_out'] and q_accuracy[j] < 0.2:
