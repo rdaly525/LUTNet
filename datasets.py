@@ -24,7 +24,7 @@ class Mnistdata(Dataset):
   def __init__(self,image_width=28,input_bits=1,X_format="-1,1",y_format="0,1"):
     assert image_width in range(1,29)
     assert input_bits in range(1,9)
-    assert X_format in ("-1,1","0,1","int")
+    assert X_format in ("-1,1","0,1","int","float")
     assert y_format in ("-1,1","0,1")
 
     self.image_width = image_width
@@ -43,29 +43,41 @@ class Mnistdata(Dataset):
     assert len(X.shape)==2
     bsize = X.shape[0]
     W = self.image_width
-    X = X.reshape((bsize,W,W))
+    X = X.reshape((bsize,28,28))
     newX = np.zeros((len(X), W, W), dtype=np.float)
     for i in range(len(X)):
       orig_im = Image.fromarray(X[i],'F')
       new_im = orig_im.resize((W,W), Image.LANCZOS)
       newX[i] = np.asarray(new_im)
       #new_im.save("temp.tiff", "TIFF")
-    return X.reshape((bsize,W*W))
+    return newX.reshape((bsize,W*W))
 
   #assumes 28x28 in "int" format
   def reformatX(self,X):
     #Downsample
     X = self.downsample(X)
+    
     #Mask out unneeded bits
     X = (255*X).astype(int)
     if self.X_format == "int":
       return X & self.bit_mask
+    if self.X_format == "float":
+      X = X & self.bit_mask
+      return X *(1.0/self.bit_mask)
+
     if (self.input_bits == 1):
       X = (X >= 2**7).astype(int)
       if self.X_format == "-1,1":
         return scaleto11(X)
-
-    assert 0
+      return X
+    else:
+      binX = np.zeros((X.shape[0],X.shape[1],self.input_bits))
+      for ib in range(self.input_bits):
+        binX[:,:,ib] = (X & 2**(ib)) > 0
+      if self.X_format == "-1,1":
+        return scaleto11(binX)
+      return binX
+    
 
   #assumes 0,1 format
   def reformatY(self,y):

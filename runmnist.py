@@ -15,10 +15,11 @@ def run_mnist(hyp,display_graphs = False):
   output_bits = hyp['output_bits']
   iters,qiter,batch = hyp['iters'],hyp['qiter'],hyp['batch']
 
-  data = datasets.Mnistdata(image_width=hyp['image_width'])
-  tdata = data.next_data(1)
-  print (tdata)
-   
+  data = datasets.Mnistdata(image_width=hyp['image_width'],input_bits=1,X_format="-1,1",y_format="0,1")
+  #data = datasets.Mnistdata(image_width=8,input_bits=2,X_format="float")
+  #tdata = data.next_data(1)
+  #print (tdata)
+  #def __init__(self,image_width=28,input_bits=1,X_format="-1,1",y_format="0,1"):
   Xbits = hyp['image_width']**2
  
   lut_bits = 4
@@ -50,8 +51,8 @@ def run_mnist(hyp,display_graphs = False):
   W_assigns = [tf.assign(Ws[i],W_quantized[i]) for i in range(len(Ws))]
 
   loss_pre = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y))
-  losses = [loss_pre + binary_l1_reg2(Ws,hyp['reg_weight_inner'],hyp['reg_weight_outer']) for i in range(qiter)]
-  train_steps = [tf.train.AdamOptimizer(hyp['learning_rate']).minimize(losses[i]) for i in range(qiter)]
+  loss = loss_pre + binary_l1_reg2(Ws,hyp['reg_weight_inner'],hyp['reg_weight_outer'])
+  train_step = tf.train.AdamOptimizer(hyp['learning_rate']).minimize(loss)
 
   ymax = tf.reduce_max(y,axis=1)
   ymax = tf.reshape(ymax,[-1,1])
@@ -81,7 +82,7 @@ def run_mnist(hyp,display_graphs = False):
         yval,lossval = None,None
         y1,y2 = None,None
 
-        _,yval,lossval,y1,y2,acc = sess.run([train_steps[j],y,losses[j],yscale, y_scale,accuracy],feed_dict={X:tdata[0],y_:tdata[1]})
+        _,yval,lossval,y1,y2,acc = sess.run([train_step,y,loss,yscale, y_scale,accuracy],feed_dict={X:tdata[0],y_:tdata[1]})
 
         if (i%sample==0):
           print(lossval, j, "("+str(i)+"/"+str(iters)+")")
