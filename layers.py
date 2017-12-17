@@ -133,7 +133,7 @@ def LutN(N,K,kind="triangle",sigma=1):
 #in.shape = [-1,K0]
 #out.shape = [-1,K1]
 def LutLayer(N,K0,K1):
-  def layer(x):
+  def layer(x,W=None):
     xshape = x.get_shape().as_list();
     assert len(xshape) == 2
     assert xshape[1] == K0
@@ -148,7 +148,7 @@ def LutLayer(N,K0,K1):
       x = tf.concat([x,x[:,0:kmod]],axis=1)
     assert x.get_shape().as_list()[1]==K1*N
     x = tf.reshape(x,[-1,K1,N])
-    out, Ws = LutN(N,K1)(x)
+    out, Ws = LutN(N,K1)(x,W)
     return out, Ws
   return layer
 
@@ -157,21 +157,67 @@ def LutLayer(N,K0,K1):
 #out = f(in)
 #in.shape = [-1,Ls[0]]
 #out.shape = [-1,Ls[-1]]
-def MacroLutLayer(N,Ls):
+def MacroLutLayer(N,Ls,Ws=None):
   def layer(x):
     K0,K1 = Ls[0],Ls[-1]
     L = len(Ls)-1
     #This is the min number of layers needed in order to have the outputs depend on every input
     assert L >= math.ceil(log(N)(K0))
     
-    Ws = [None for i in range(L)]
+    if Ws:
+      newWs = Ws
+    else:
+      newWs = [None for i in range(L)]
+    assert len(newWs) == L
     l = x
     for i in range(L):
       print( "A", l, Ls[i], Ls[i+1])
-      l, Ws[i] = LutLayer(N,Ls[i],Ls[i+1])(l)
-    return l, Ws
+      l, newWs[i] = LutLayer(N,Ls[i],Ls[i+1])(l,newWs[i])
+    return l, newWs
   return layer
 
+def SingleMacroLayer(N,K0,K1):
+  steps = math.ceil(log(N)(K0))
+  Ls = create_layers(K0,K1,steps)
+  return MacroLutLayer(N,Ls)
+
+#N bits
+#H,W initial height and width
+#fh,fw is filter height and width
+#Cin is input channels
+#Cout is output channels
+
+#X.shape =  (-1,H,W,Cin)
+#newH = H-fh+1
+#newW = W-fw+1
+#out.shape = (-1,newH,newW,Cout)
+#Ws = SingleMacroLayer(N,fh*fw*Cin,Cout)
+
+def lutConvlayer(N,H,W,fh,fw,Cin,Cout):
+  K0 = fh*fw*Cin
+  K1 = Cout
+  convLayer = SingleMacroLayer(N,K0,K1)
+  def layer(X):
+    xshape = X.get_shape().as_list();
+    assert len(xshape) == 4
+    assert X.shape[1:] == [H,W,Cin]
+
+    Ws = []
+    luth = []
+    for h in range(H):
+      Xh = X[:,h]
+      lutw = []
+      for w in range(W):
+        Xhw = Xh[:,w]
+        lutc = []
+        for c in range(Cout):
+          out, weight = lut(Xhw)
+          Ws.append(weight)
+          lutc.append(out)
+        lutw.append(tf.stack(lutc,axis=1))
+      luth.append(tf.stack(lutw,axis=1))
+    return tf.stack(luth,axis=1), Ws
+  return layer
 
 def SelectN(N,kind="gaussian",sigma=1):
   def sel(x,W=None):
@@ -410,30 +456,4 @@ def lutlayers(N,sigma,inW,outW,L):
     return curl, Ws
   return layers
 
-#N bits
-#H,W initial height and width
-#Cin is input channels
-#Cout is output channels
-def lutConvlayer(N,H,W,Cin,Cout):
-  assert Cin==4
-  lut = lutN(N,1)
-  def layer(X):
-    print( X)
-    print( [H,W,Cin])
-    assert X.shape[1:] == [H,W,Cin]
-    Ws = []
-    luth = []
-    for h in range(H):
-      Xh = X[:,h]
-      lutw = []
-      for w in range(W):
-        Xhw = Xh[:,w]
-        lutc = []
-        for c in range(Cout):
-          out, weight = lut(Xhw)
-          Ws.append(weight)
-          lutc.append(out)
-        lutw.append(tf.stack(lutc,axis=1))
-      luth.append(tf.stack(lutw,axis=1))
-    return tf.stack(luth,axis=1), Ws
-  return layer
+
