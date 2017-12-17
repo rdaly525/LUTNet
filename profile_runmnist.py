@@ -5,6 +5,7 @@ from common import *
 import datasets
 from layers import *
 import matplotlib.pyplot as plt
+from tensorflow.python.client import timeline
 
 
 def run_mnist(hyp,display_graphs = False):
@@ -76,13 +77,20 @@ def run_mnist(hyp,display_graphs = False):
   with tf.Session() as sess:
     tf.global_variables_initializer().run()
     
+    options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+    run_metadata= tf.RunMetadata()
+
     for j in range(qiter):
       for i in range(iters):
         tdata = data.next_data(batch)
         yval,lossval = None,None
         y1,y2 = None,None
 
-        _,yval,lossval,y1,y2,acc = sess.run([train_step,y,loss,yscale, y_scale,accuracy],feed_dict={X:tdata[0],y_:tdata[1]})
+        _,yval,lossval,y1,y2,acc = sess.run([train_step,y,loss,yscale, y_scale,accuracy],feed_dict={X:tdata[0],y_:tdata[1]},options=options,run_metadata=run_metadata)
+        fetched_timeline = timeline.Timeline(run_metadata.step_stats)
+        chrome_trace = fetched_timeline.generate_chrome_trace_format()
+        with open('profile/timeline_step_%d.json' % (j*iters + i),"w+") as f:
+          f.write(chrome_trace)
 
         if (i%sample==0):
           print(lossval, j, "("+str(i)+"/"+str(iters)+")")
@@ -98,7 +106,7 @@ def run_mnist(hyp,display_graphs = False):
 
 
       curWs = sess.run(Ws,feed_dict={X:data.test[0],y_:data.test[1]})
-      hist = histogram(curWs)
+      #hist = histogram(curWs)
 
       print("curW5",curWs[2])
 
@@ -107,8 +115,8 @@ def run_mnist(hyp,display_graphs = False):
       
       sess.run(W_assigns,feed_dict=full_quant_fd)
       QWs = sess.run(Ws,feed_dict={X:data.test[0],y_:data.test[1]})
-      luthists = histLut(QWs)
-      luthistdeps = histLutDeps(QWs)
+      #luthists = histLut(QWs)
+      #luthistdeps = histLutDeps(QWs)
       q_accuracy[j] = accuracy.eval(feed_dict={X:data.test[0],y_:data.test[1]})
       print(j, "Accuracy_test_q")
       print(q_accuracy[j])
@@ -166,7 +174,7 @@ if __name__ == '__main__':
     partial_quant_threshold = 0.95
   )
   #a = run_mnist(hyp,True)
-  a = run_mnist({'image_width': 28, 'learning_rate': 0.013671298649718656, 'reg_weight_inner': 1.3161390636688435e-10, 'reg_weight_outer': 0.20233250452973095, 'output_bits': 8, 'layer_count': 5, 'qiter': 5, 'iters': 750, 'batch': 48, 'quant_scheme': 'partial_then_full', 'quant_iter_threshold': 0.9, 'early_out': True, 'partial_quant_threshold': 0.9341594717634678},True)
+  a = run_mnist({'image_width': 28, 'learning_rate': 0.013671298649718656, 'reg_weight_inner': 1.3161390636688435e-10, 'reg_weight_outer': 0.20233250452973095, 'output_bits': 8, 'layer_count': 6, 'qiter': 10, 'iters': 750, 'batch': 48, 'quant_scheme': 'partial_then_full', 'quant_iter_threshold': 0.9, 'early_out': True, 'partial_quant_threshold': 0.9341594717634678},True)
   print(a)
 
   
