@@ -7,9 +7,9 @@ from layers import *
 import matplotlib.pyplot as plt
 
 
-def run_mnist(hyp,display_graphs = False):
+def run_mnist_conv(hyp,display_graphs = False):
   assert hyp['quant_scheme']=="partial_then_full", "Only 'partial_then_full' quantization implemented atm"
-  sample = 50 # How many linear iterations in between printing
+  sample = 5 # How many linear iterations in between printing
 
   #extract commmonly used hyperparameters to nicer var names
   output_bits = hyp['output_bits']
@@ -20,17 +20,34 @@ def run_mnist(hyp,display_graphs = False):
   #tdata = data.next_data(1)
   #print (tdata)
   #def __init__(self,image_width=28,input_bits=1,X_format="-1,1",y_format="0,1"):
-  Xbits = hyp['image_width']**2
- 
+  H = hyp['image_width']
+  W = hyp['image_width']
+  Xbits = H*W
+
   lut_bits = 4
   ybits = 10
-  layers = create_layers(Xbits,ybits*output_bits,hyp['layer_count'])
-  print (layers)
 
   X = tf.placeholder(tf.float32, shape=[None,Xbits])
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
-  
-  y, Ws = MacroLutLayer(lut_bits,layers)(X)
+  X_reshape = tf.reshape(X,[-1,H,W,1])
+
+  lnum=5
+  lWs = [None for i in range(lnum)]
+  l = [None for i in range(lnum)]
+
+  l[0], lWs[0] = ConvLayer(N=4,Cout=8,filt=[3,3],stride=[1,1],padding="SAME")(X_reshape)
+  l[1], lWs[1] = ConvLayer(N=4,Cout=16,filt=[3,3],stride=[2,2],padding="SAME")(l[0])
+  l[2], lWs[2] = ConvLayer(N=4,Cout=16,filt=[3,3],stride=[2,2],padding="SAME")(l[1])
+  l[3], lWs[3] = ConvLayer(N=4,Cout=40,filt=[3,3],stride=[2,2],padding="SAME")(l[2])
+  l[4], lWs[4] = ConvLayer(N=4,Cout=40,filt=[3,3],stride=[1,1],padding="VALID")(l[3])
+  y = l[4]
+  yshape = y.get_shape().as_list()
+  print("YSHAPE",yshape)
+  assert yshape[1]*yshape[2]*yshape[3]==10*output_bits
+  print("LAYERS")
+  for lay in l:
+    print("  ",lay)
+
   print (y)
   #scale = np.ones([1,1,output_bits])
   #scale[0][0] = np.array([1,1,1,1,1,1,1,1])
@@ -38,7 +55,7 @@ def run_mnist(hyp,display_graphs = False):
   print (y)
   y = tf.reduce_sum(y,2)
   print (y)
-
+  Ws = flatten_list(lWs)
   totLuts = 0
   print (len(Ws))
   for w in Ws:
@@ -156,7 +173,6 @@ if __name__ == '__main__':
     reg_weight_inner = 0.00001,
     reg_weight_outer = 1.0,
     output_bits = 2,
-    layer_count = 5,
     qiter = 3,
     iters = 300,
     batch = 32,
@@ -166,7 +182,7 @@ if __name__ == '__main__':
     partial_quant_threshold = 0.95
   )
   #a = run_mnist(hyp,True)
-  a = run_mnist({'image_width': 28, 'learning_rate': 0.013671298649718656, 'reg_weight_inner': 1.3161390636688435e-10, 'reg_weight_outer': 0.20233250452973095, 'output_bits': 8, 'layer_count': 5, 'qiter': 5, 'iters': 750, 'batch': 48, 'quant_scheme': 'partial_then_full', 'quant_iter_threshold': 0.9, 'early_out': True, 'partial_quant_threshold': 0.9341594717634678},True)
+  a = run_mnist_conv({'image_width': 20, 'learning_rate': 0.01, 'reg_weight_inner': 1.3161390636688435e-10, 'reg_weight_outer': 0.20233250452973095, 'output_bits': 4, 'qiter': 5, 'iters': 100, 'batch': 32, 'quant_scheme': 'partial_then_full', 'quant_iter_threshold': 0.9, 'early_out': True, 'partial_quant_threshold': 0.9341594717634678},True)
   print(a)
 
   
