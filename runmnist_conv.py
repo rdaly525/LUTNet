@@ -31,16 +31,18 @@ def run_mnist_conv(hyp,display_graphs = False):
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
   X_reshape = tf.reshape(X,[-1,H,W,1])
 
-  lnum=5
+  lnum=2
   lWs = [None for i in range(lnum)]
   l = [None for i in range(lnum)]
 
-  l[0], lWs[0] = ConvLayer(N=4,Cout=8,filt=[3,3],stride=[1,1],padding="SAME")(X_reshape)
-  l[1], lWs[1] = ConvLayer(N=4,Cout=16,filt=[3,3],stride=[2,2],padding="SAME")(l[0])
-  l[2], lWs[2] = ConvLayer(N=4,Cout=16,filt=[3,3],stride=[2,2],padding="SAME")(l[1])
-  l[3], lWs[3] = ConvLayer(N=4,Cout=40,filt=[3,3],stride=[2,2],padding="SAME")(l[2])
-  l[4], lWs[4] = ConvLayer(N=4,Cout=40,filt=[3,3],stride=[1,1],padding="VALID")(l[3])
-  y = l[4]
+  l[0], lWs[0] = ConvLayer(N=4,Cout=30,filt=[7,7],stride=[2,2],padding="VALID")(X_reshape)
+  print("L0",l[0])
+  l[1], lWs[1] = ConvLayer(N=4,Cout=60,filt=[8,8],stride=[1,1],padding="VALID")(l[0])
+  #l[2], lWs[2] = ConvLayer(N=4,Cout=32,filt=[5,5],stride=[1,1],padding="SAME")(l[1])
+  #l[3], lWs[3] = ConvLayer(N=4,Cout=32,filt=[2,2],stride=[2,2],padding="SAME")(l[2])
+  #l[4], lWs[4] = ConvLayer(N=4,Cout=60,filt=[5,5],stride=[1,1],padding="VALID")(l[3])
+  print("LLLLL",l)
+  y = l[1]
   yshape = y.get_shape().as_list()
   print("YSHAPE",yshape)
   assert yshape[1]*yshape[2]*yshape[3]==10*output_bits
@@ -178,7 +180,7 @@ if __name__ == '__main__':
     partial_quant_threshold = 0.95
   )
   #a = run_mnist(hyp,True)
-  a = run_mnist_conv({'image_width': 20, 'learning_rate': 0.01, 'reg_weight_inner': 1.3161390636688435e-10, 'reg_weight_outer': 0.20233250452973095, 'output_bits': 4, 'qiter': 5, 'iters': 750, 'batch': 32, 'quant_scheme': 'partial_then_full', 'quant_iter_threshold': 0.9, 'early_out': True, 'partial_quant_threshold': 0.9341594717634678},False)
+  a = run_mnist_conv({'image_width': 21, 'learning_rate': 0.003, 'reg_weight_inner': 1.3161390636688435e-10, 'reg_weight_outer': 0.20233250452973095, 'output_bits': 6, 'qiter': 5, 'iters': 750, 'batch': 32, 'quant_scheme': 'partial_then_full', 'quant_iter_threshold': 0.9, 'early_out': True, 'partial_quant_threshold': 0.9341594717634678},False)
   print(a)
 
   

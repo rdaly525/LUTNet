@@ -152,6 +152,11 @@ def ConvLayer(N,Cout,filt=[3,3],stride=[1,1],padding="SAME"):
     print(xshape)
     assert len(xshape) == 4
     H,W,Cin = x.get_shape().as_list()[1:]
+    #Verifies no padding
+    print("(%d-%d)%%%d == 0?" % (H,fh,sh))
+    assert (H-fh)%sh == 0
+    assert (W-fw)%sw == 0
+
     K0 = fh*fw*Cin
     
     xpatch = tf.extract_image_patches(
