@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 def run_mnist_conv(hyp,display_graphs = False):
   assert hyp['quant_scheme']=="partial_then_full", "Only 'partial_then_full' quantization implemented atm"
-  sample = 5 # How many linear iterations in between printing
+  sample = 10 # How many linear iterations in between printing
 
   #extract commmonly used hyperparameters to nicer var names
   output_bits = hyp['output_bits']
@@ -76,10 +76,6 @@ def run_mnist_conv(hyp,display_graphs = False):
   ymax = tf.tile(ymax,[1,10])
   yscale = y >= ymax
   y_scale = tf.cast(y_,tf.bool)
-  print("1",ymax)
-  print("2",y)
-  print("3",yscale)
-  print("4",y_scale)
   
   correct_pred = tf.cast(tf.reduce_all(tf.equal(yscale,y_scale),1),tf.float32)
   accuracy = tf.reduce_mean(correct_pred)
@@ -115,7 +111,7 @@ def run_mnist_conv(hyp,display_graphs = False):
 
 
       curWs = sess.run(Ws,feed_dict={X:data.test[0],y_:data.test[1]})
-      hist = histogram(curWs)
+      #hist = histogram(curWs)
 
       print("curW5",curWs[2])
 
@@ -124,8 +120,8 @@ def run_mnist_conv(hyp,display_graphs = False):
       
       sess.run(W_assigns,feed_dict=full_quant_fd)
       QWs = sess.run(Ws,feed_dict={X:data.test[0],y_:data.test[1]})
-      luthists = histLut(QWs)
-      luthistdeps = histLutDeps(QWs)
+      #luthists = histLut(QWs)
+      #luthistdeps = histLutDeps(QWs)
       q_accuracy[j] = accuracy.eval(feed_dict={X:data.test[0],y_:data.test[1]})
       print(j, "Accuracy_test_q")
       print(q_accuracy[j])
@@ -182,7 +178,7 @@ if __name__ == '__main__':
     partial_quant_threshold = 0.95
   )
   #a = run_mnist(hyp,True)
-  a = run_mnist_conv({'image_width': 20, 'learning_rate': 0.01, 'reg_weight_inner': 1.3161390636688435e-10, 'reg_weight_outer': 0.20233250452973095, 'output_bits': 4, 'qiter': 5, 'iters': 100, 'batch': 32, 'quant_scheme': 'partial_then_full', 'quant_iter_threshold': 0.9, 'early_out': True, 'partial_quant_threshold': 0.9341594717634678},True)
+  a = run_mnist_conv({'image_width': 20, 'learning_rate': 0.01, 'reg_weight_inner': 1.3161390636688435e-10, 'reg_weight_outer': 0.20233250452973095, 'output_bits': 4, 'qiter': 5, 'iters': 750, 'batch': 32, 'quant_scheme': 'partial_then_full', 'quant_iter_threshold': 0.9, 'early_out': True, 'partial_quant_threshold': 0.9341594717634678},False)
   print(a)
 
   
