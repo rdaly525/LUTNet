@@ -24,6 +24,7 @@ def run_mnist_conv(hyp,display_graphs = False):
   #def __init__(self,image_width=28,input_bits=1,X_format="-1,1",y_format="0,1"):
   H = hyp['image_width']
   W = hyp['image_width']
+  W_stddev = hyp['weight_init']
   Xbits = H*W
 
   lut_bits = 4
@@ -33,18 +34,18 @@ def run_mnist_conv(hyp,display_graphs = False):
   y_ = tf.placeholder(tf.float32, shape=[None,ybits])
   X_reshape = tf.reshape(X,[-1,H,W,1])
 
-  lnum=2
+  lnum=3
   lWs = [None for i in range(lnum)]
   l = [None for i in range(lnum)]
 
-  l[0], lWs[0] = ConvLayer(N=4,Cout=30,filt=[7,7],stride=[2,2],padding="VALID")(X_reshape)
+  l[0], lWs[0] = ConvLayer(N=4,Cout=32,filt=[5,5],stride=[2,2],stddev=W_stddev)(X_reshape)
   print("L0",l[0])
-  l[1], lWs[1] = ConvLayer(N=4,Cout=60,filt=[8,8],stride=[1,1],padding="VALID")(l[0])
-  #l[2], lWs[2] = ConvLayer(N=4,Cout=32,filt=[5,5],stride=[1,1],padding="SAME")(l[1])
+  l[1], lWs[1] = ConvLayer(N=4,Cout=64,filt=[5,5],stride=[2,2],stddev=W_stddev)(l[0])
+  l[2], lWs[2] = ConvLayer(N=4,Cout=80,filt=[4,4],stride=[1,1],stddev=W_stddev)(l[1])
   #l[3], lWs[3] = ConvLayer(N=4,Cout=32,filt=[2,2],stride=[2,2],padding="SAME")(l[2])
   #l[4], lWs[4] = ConvLayer(N=4,Cout=60,filt=[5,5],stride=[1,1],padding="VALID")(l[3])
   print("LLLLL",l)
-  y = l[1]
+  y = l[2]
   yshape = y.get_shape().as_list()
   print("YSHAPE",yshape)
   assert yshape[1]*yshape[2]*yshape[3]==10*output_bits
@@ -168,21 +169,22 @@ def run_mnist_conv(hyp,display_graphs = False):
 
 if __name__ == '__main__':
   hyp = dict(
-    image_width = 20,
-    learning_rate = 0.01,
-    reg_weight_inner = 0.00001,
-    reg_weight_outer = 1.0,
-    output_bits = 2,
-    qiter = 3,
-    iters = 300,
-    batch = 32,
+    image_width = 25,
+    weight_init = 0.01,
+    learning_rate = 0.003,
+    reg_weight_inner = 1.3e-10,
+    reg_weight_outer = 0.2,
+    output_bits = 8,
+    qiter = 16,
+    iters = 750,
+    batch = 48,
     quant_scheme = "partial_then_full",
     quant_iter_threshold = 0.75, # switchover 75% of the way through
     early_out = True,
-    partial_quant_threshold = 0.95
+    partial_quant_threshold = 0.94
   )
-  #a = run_mnist(hyp,True)
-  a = run_mnist_conv({'image_width': 21, 'learning_rate': 0.003, 'reg_weight_inner': 1.3161390636688435e-10, 'reg_weight_outer': 0.20233250452973095, 'output_bits': 6, 'qiter': 5, 'iters': 750, 'batch': 32, 'quant_scheme': 'partial_then_full', 'quant_iter_threshold': 0.9, 'early_out': True, 'partial_quant_threshold': 0.9341594717634678},False)
+  a = run_mnist_conv(hyp,True)
+  #a = run_mnist_conv({'image_width': 25, 'learning_rate': 0.003, 'reg_weight_inner': 1.3161390636688435e-10, 'reg_weight_outer': 0.20233250452973095, 'output_bits': 6, 'qiter': 5, 'iters': 750, 'batch': 32, 'quant_scheme': 'partial_then_full', 'quant_iter_threshold': 0.9, 'early_out': True, 'partial_quant_threshold': 0.9341594717634678},False)
   print(a)
 
   
