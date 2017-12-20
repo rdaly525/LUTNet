@@ -1,4 +1,4 @@
+/tmp/tensorflow_pkg/tensorflow-1.4.0-cp34-cp34m-linux_x86_64.whl
 numpy
 image
-tensorflow
 matplotlib

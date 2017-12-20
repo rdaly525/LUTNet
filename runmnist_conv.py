@@ -4,7 +4,9 @@ import tensorflow as tf
 from common import *
 import datasets
 from layers import *
-import matplotlib.pyplot as plt
+import importlib
+if importlib.find_loader('matplotlib.pyplot'):
+  import matplotlib.pyplot as plt
 
 
 def run_mnist_conv(hyp,display_graphs = False):
