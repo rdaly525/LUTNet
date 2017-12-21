@@ -140,6 +140,8 @@ def run_mnist(hyp,display_graphs = False):
 
 if __name__ == '__main__':
 
+  hyp = {'image_width': 28, 'learning_rate': 0.013392172663178482, 'reg_weight_inner': 1.6635371262775977e-10, 'reg_weight_outer': 6.454157834240995, 'output_bits': 128, 'layer_count': 7, 'qiter': 25, 'iters': 750, 'batch': 48, 'quant_scheme': 'partial_then_full', 'quant_iter_threshold': 0.7706445869340893, 'early_out': True, 'partial_quant_threshold': 0.9192349011565051}
+  """
   hyp = dict(
     image_width = 28,
     learning_rate = 0.01,
@@ -155,6 +157,7 @@ if __name__ == '__main__':
     early_out = True,
     partial_quant_threshold = 0.95
   )
+  """
   a = run_mnist(hyp,True)
   print(a)
 
