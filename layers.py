@@ -11,10 +11,14 @@ def broadcast(tensor,shape):
 def Var(k,stddev=0.5):
   return tf.Variable(tf.random_normal(k,mean=0,stddev=stddev))
 
+
 #out = f(I,S)
 #I.shape == [K,2**N]
-#S.shape == [-1 (,WH), K,N]
+#S.shape == [-1 (,WH), K,N] 
 #out.shape == [-1 (,WH), K]
+#Note: This function can either take in 3 or 4 dimensions for the S param.
+#      The WH is used when doing a convolution
+
 def MuxSTriangle(N,K):
   def mux(I,S):
     Ishape = I.get_shape().as_list()
@@ -26,7 +30,7 @@ def MuxSTriangle(N,K):
     S0 = tf.maximum(0.0,1-tf.abs(S+1)/2.0)
     S1 = tf.maximum(0.0,1-tf.abs(S-1)/2.0)
     
-    if len(Sshape) == 3:
+    if len(Sshape) == 3: 
       assert Sshape[1] == K
       assert Sshape[2] == N
 
@@ -84,7 +88,7 @@ def LutLayer(N,K0,K1,stddev=0.5):
       x = tf.reshape(x,[-1,K1,N])
       out, Ws = LutN(N,K1,stddev)(x,W)
       return out, Ws
-    else:
+    else: # Used for convolutions
       print(xshape)
       assert len(xshape)==3
       assert xshape[2] == K0
@@ -133,10 +137,9 @@ def SingleMacroLayer(N,K0,K1,stddev=0.5):
   return MacroLutLayer(N,Ls,stddev)
 
 #N bits
-#H,W initial height and width
-#fh,fw is filter height and width
-#Cin is input channels
 #Cout is output channels
+#filt is filter hieght and width
+#stride is the stride in x and y
 
 #X.shape =  (-1,H,W,Cin)
 #out.shape = (-1,newH,newW,Cout)
@@ -159,6 +162,8 @@ def ConvLayer(N,Cout,filt=[3,3],stride=[1,1],stddev=0.5):
 
     K0 = fh*fw*Cin
     
+    #This awesome function basically is an im2col paramterized by:
+    #patch size (ksizes) and strides
     xpatch = tf.extract_image_patches(
         x,
         ksizes=[1,filt[0],filt[1],1],

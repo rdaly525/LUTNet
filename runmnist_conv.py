@@ -42,9 +42,8 @@ def run_mnist_conv(hyp,display_graphs = False):
   print("L0",l[0])
   l[1], lWs[1] = ConvLayer(N=4,Cout=64,filt=[5,5],stride=[2,2],stddev=W_stddev)(l[0])
   l[2], lWs[2] = ConvLayer(N=4,Cout=80,filt=[4,4],stride=[1,1],stddev=W_stddev)(l[1])
-  #l[3], lWs[3] = ConvLayer(N=4,Cout=32,filt=[2,2],stride=[2,2],padding="SAME")(l[2])
-  #l[4], lWs[4] = ConvLayer(N=4,Cout=60,filt=[5,5],stride=[1,1],padding="VALID")(l[3])
-  print("LLLLL",l)
+  #l[3], lWs[3] = ConvLayer(N=4,Cout=32,filt=[2,2],stride=[2,2],stddev=W_stddev)(l[2])
+  #l[4], lWs[4] = ConvLayer(N=4,Cout=60,filt=[5,5],stride=[1,1],stddev=W_stddev)(l[3])
   y = l[2]
   yshape = y.get_shape().as_list()
   print("YSHAPE",yshape)
