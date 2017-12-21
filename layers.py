@@ -163,7 +163,7 @@ def ConvLayer(N,Cout,filt=[3,3],stride=[1,1],stddev=0.5):
     K0 = fh*fw*Cin
     
     #This awesome function basically is an im2col paramterized by:
-    #patch size (ksizes) and strides
+    #patch size (ksizes), and strides
     xpatch = tf.extract_image_patches(
         x,
         ksizes=[1,filt[0],filt[1],1],
@@ -174,7 +174,7 @@ def ConvLayer(N,Cout,filt=[3,3],stride=[1,1],stddev=0.5):
     print ("xpat",xpatch)
     pshape = xpatch.get_shape().as_list()
     xpatch_flat = tf.reshape(xpatch,[-1,pshape[1]*pshape[2],pshape[3]])
-    out_flat, Ws = SingleMacroLayer(N,K0,K1,stddev=0.5)(xpatch_flat)
+    out_flat, Ws = SingleMacroLayer(N,K0,K1,stddev=stddev)(xpatch_flat)
     out = tf.reshape(out_flat,[-1,pshape[1],pshape[2],K1])
     return out,Ws
   return layer
