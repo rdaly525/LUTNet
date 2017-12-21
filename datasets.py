@@ -13,11 +13,91 @@ class Data:
     self.outputs = outputs
 
 class Dataset:
-  def __init__(self,train,test):
+  def __init__(self,train,test,data=None):
     assert isinstance(train,Data)
     assert isinstance(test,Data)
     self.train_data = train
     self.test_data = test
+    self.data = data
+
+class Mnistdata(Dataset):
+  def __init__(self,image_width=28,input_bits=1,X_format="-1,1",y_format="0,1"):
+    assert image_width in range(1,29)
+    assert input_bits in range(1,9)
+    assert X_format in ("-1,1","0,1","int","float")
+    assert y_format in ("-1,1","0,1")
+
+    self.image_width = image_width
+    self.input_bits =input_bits 
+    self.bit_mask = sum([2**(7-i) for i in range(input_bits)])
+    self.X_format = X_format
+    self.y_format = y_format
+    data = mnist.input_data.read_data_sets('MNIST_data',one_hot=True)
+    train_images = self.reformatX(data.train.images)
+    train_labels = self.reformatY(data.train.labels)
+    test_images = self.reformatX(data.test.images)
+    test_labels = self.reformatY(data.test.labels)
+    Dataset.__init__(self,Data(train_images,train_labels),Data(test_images,test_labels),data)
+
+  def downsample(self,X):
+    assert len(X.shape)==2
+    bsize = X.shape[0]
+    W = self.image_width
+    X = X.reshape((bsize,28,28))
+    newX = np.zeros((len(X), W, W), dtype=np.float)
+    for i in range(len(X)):
+      orig_im = Image.fromarray(X[i],'F')
+      new_im = orig_im.resize((W,W), Image.LANCZOS)
+      newX[i] = np.asarray(new_im)
+      #new_im.save("temp.tiff", "TIFF")
+    return newX.reshape((bsize,W*W))
+
+  #assumes 28x28 in "int" format
+  def reformatX(self,X):
+    #Downsample
+    X = self.downsample(X)
+    
+    #Mask out unneeded bits
+    X = (255*X).astype(int)
+    if self.X_format == "int":
+      return X & self.bit_mask
+    if self.X_format == "float":
+      X = X & self.bit_mask
+      return X *(1.0/self.bit_mask)
+
+    if (self.input_bits == 1):
+      X = (X >= 2**7).astype(int)
+      if self.X_format == "-1,1":
+        return scaleto11(X)
+      return X
+    else:
+      binX = np.zeros((X.shape[0],X.shape[1],self.input_bits))
+      for ib in range(self.input_bits):
+        binX[:,:,ib] = (X & 2**(ib)) > 0
+      if self.X_format == "-1,1":
+        return scaleto11(binX)
+      return binX
+    
+
+  #assumes 0,1 format
+  def reformatY(self,y):
+    if self.y_format == "-1,1":
+      return scaleto11(y)
+    return y
+
+  def next_data(self,k):
+    data = self.data.train.next_batch(k)
+    return [self.reformatX(data[0]), self.reformatY(data[1]) ]
+
+  @property
+  def test(self):
+    return [self.test_data.inputs,self.test_data.outputs]
+
+  @property
+  def train(self):
+    return [self.train_data.inputs,self.train_data.outputs]
+ 
+
 
 #K is number of mux inputs
 class Seldata(Dataset):
@@ -155,67 +235,7 @@ class Binopdata(Dataset):
     return self.test_data
 
 
-
-class Mnistdata(Dataset):
-  def __init__(self,image_width=28,bit_depth=1,map_0_to_n1=True):
-    # TODO: figure out what to do with bit_depth and map_0_to_n1
-    assert bit_depth == 1
-    assert map_0_to_n1 
-    assert image_width<=28
-    self.image_width = image_width
-    self.bit_depth = bit_depth
-    self.map_0_to_n1 = map_0_to_n1
-    self.data =  mnist.input_data.read_data_sets('MNIST_data',one_hot=True)
-    print(self.data.train.labels.shape)
-    train_images = self.data.train.images
-    train_labels = self.data.train.labels
-    test_images = self.data.test.images
-    test_labels = self.data.test.labels
-    Dataset.__init__(self,Data(train_images,train_labels),Data(test_images,test_labels))
-
-  #assume [?,784]
-  def reshape(self,X):
-    bsize = X.shape[0]
-    assert X.shape[1] == 28**2
-    return np.reshape(X,(bsize,28,28))
-
-  def downsample(self,X):
-    if type(X) is tuple or type(X) is list:
-      return [self.downsample(X[0]),X[1]]
-    if len(X.shape)==2:
-      X = self.reshape(X)
-
-    W = self.image_width
-
-    newX = np.zeros((len(X), W, W), dtype=np.float)
-    for i in range(len(X)):
-      orig_im = Image.fromarray(X[i],'F')
-      new_im = orig_im.resize((W,W), Image.LANCZOS)
-      newX[i] = np.asarray(new_im)
-      #new_im.save("temp.tiff", "TIFF")
-    return newX.reshape(newX.shape[0],W*W)
-
-  def next_data(self,k):
-    data = self.data.train.next_batch(k)
-    data = self.downsample(data)
-    data[0] = scaleto11((data[0] > 0.5).astype(int))
-    data[1] = scaleto11((data[1] > 0.5).astype(int))
-    return data
-
-  #@property
-  def test(self,to11=True):
-    if (to11):
-      return [scaleto11(( self.downsample(self.test_data.inputs) > 0.5).astype(int)),scaleto11((self.test_data.outputs >0.5).astype(int))]
-    else:
-      return [scaleto11(( self.downsample(self.test_data.inputs) > 0.5).astype(int)),(self.test_data.outputs >0.5).astype(int)]
-  
-  #@property
-  def train(self, to11=True):
-    if (to11):
-      return [scaleto11(( self.downsample(self.train_data.inputs) > 0.5).astype(int)),scaleto11((self.train_data.outputs >0.5).astype(int))]
-    else:
-      return [scaleto11(( self.downsample(self.train_data.inputs) > 0.5).astype(int)),(self.train_data.outputs >0.5).astype(int)]
-      
+     
 
 
 

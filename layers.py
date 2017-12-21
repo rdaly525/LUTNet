@@ -111,6 +111,7 @@ def MuxITriangle(N,K):
 
 
 def LutN(N,K,kind="triangle",sigma=1):
+  assert kind=="triangle"
   def lut(x,W=None):
     if W is not None:
       Wshape = W.get_shape().as_list()
