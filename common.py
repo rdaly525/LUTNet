@@ -78,6 +78,34 @@ def make_feed_dict(phs, curs,thresh=0,keep=False,prob=1):
     feed_dict[phs[i]] = news[i]
   return feed_dict
 
+def make_feed_dict2(phs, curs, ri=0):
+  assert len(phs) == len(curs)
+  def quant(x):
+    if (x >=1):
+      return 1
+    elif (x < -1):
+      return -1
+    elif (np.random.random() < ri):
+      if (x > (1-ri)):
+        return 1
+      elif (x < (ri-1)):
+        return -1
+      else:
+        return x
+    else:
+      if ((np.random.random()*2 - 1.0) < x):
+        return 1
+      else:
+        return -1
+  quant = np.vectorize(quant,otypes=[np.float])
+  news = [quant(cur) for cur in curs]
+  feed_dict = {}
+  for i in range(len(phs)):
+    feed_dict[phs[i]] = news[i]
+  return feed_dict
+
+
+
 def bitstr(i,N=None):
   ret = bin(i)[2:][::-1]
   if N:

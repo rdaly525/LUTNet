@@ -152,11 +152,11 @@ def ConvLayer(N,Cout,filt=[3,3],stride=[1,1],stddev=0.5):
   K1 = Cout
   def layer(x):
     xshape = x.get_shape().as_list();
-    print(xshape)
+    print("xshape",xshape)
     assert len(xshape) == 4
     H,W,Cin = x.get_shape().as_list()[1:]
     #Verifies no padding
-    print("(%d-%d)%%%d == 0?" % (H,fh,sh))
+    #print("(%d-%d)%%%d == 0?" % (H,fh,sh))
     assert (H-fh)%sh == 0
     assert (W-fw)%sw == 0
 
@@ -178,6 +178,14 @@ def ConvLayer(N,Cout,filt=[3,3],stride=[1,1],stddev=0.5):
     out = tf.reshape(out_flat,[-1,pshape[1],pshape[2],K1])
     return out,Ws
   return layer
+
+def l2_reg(W):
+  if not type(W) is list:
+    W = [W]
+  out = 0
+  for w in W:
+    out += tf.reduce_sum(w*w)
+  return out
 
 def binary_reg(W):
   if not type(W) is list:
