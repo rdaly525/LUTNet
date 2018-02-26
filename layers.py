@@ -12,6 +12,28 @@ def Var(k,stddev=0.5):
   return tf.Variable(tf.random_normal(k,mean=0,stddev=stddev))
 
 
+# I.shape == [-1,L]
+# out.shape == [-1,L]
+
+def hardSigmoid(I):
+  Ishape = I.get_shape().as_list()
+  assert len(Ishape) == 2
+  L = Ishape[1]
+  return tf.maximum(-1.0,tf.minimum(1.0,I));
+  
+
+# This will sum up each L things and threshold on 0
+# I.shape == [-1,L,K]
+# out.shape == [-1,L]
+def popCountThresh():
+  def pct(I):
+    Ishape = I.get_shape().as_list()
+    assert len(Ishape)==3
+    red = tf.reduce_sum(I,2)
+    return hardSigmoid(red)
+  return pct
+
+
 #out = f(I,S)
 #I.shape == [K,2**N]
 #S.shape == [-1 (,WH), K,N] 
